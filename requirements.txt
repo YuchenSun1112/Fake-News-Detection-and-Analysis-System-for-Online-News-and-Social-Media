@@ -1,0 +1,8 @@
+streamlit
+torch
+transformers
+datasets
+pandas
+scikit-learn
+numpy
+python-dotenv
