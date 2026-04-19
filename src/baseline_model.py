@@ -1,4 +1,5 @@
 import os
+from functools import lru_cache
 import torch
 import pandas as pd
 
@@ -115,6 +116,7 @@ def train_baseline(debug_sample_size=None):
     print(f"Baseline model saved to {final_dir}")
 
 
+@lru_cache(maxsize=1)
 def load_baseline_model():
     model_path = os.path.join(BASELINE_MODEL_DIR, "final")
     tokenizer = BertTokenizer.from_pretrained(model_path)
