@@ -1,0 +1,42 @@
+[project]
+name = "fact-based-news-verification"
+version = "0.1.0"
+description = "A Streamlit prototype for fact-based news verification with baseline classification, claim extraction, evidence retrieval, and claim verification."
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "accelerate>=0.30",
+    "datasets>=2.19",
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "python-dotenv>=1.0",
+    "requests>=2.31",
+    "safetensors>=0.4",
+    "scikit-learn>=1.3",
+    "sentencepiece>=0.2",
+    "streamlit>=1.34",
+    "torch>=2.3",
+    "transformers>=4.46,<5",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.6",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.6",
+]

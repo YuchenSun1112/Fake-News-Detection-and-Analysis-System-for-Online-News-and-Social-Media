@@ -99,7 +99,6 @@ streamlit run app.py
 
 ## Current Limitations
 
-- The baseline model is trained mostly on title-level data.
 - The verifier is heuristic, not a trained NLI model.
 - Evidence retrieval depends on the GNews API.
 - Verification is based on retrieved snippets, not full article content.

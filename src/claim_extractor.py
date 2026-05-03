@@ -19,6 +19,7 @@ CLAIM_EXTRACTOR_MODEL = os.getenv("CLAIM_EXTRACTOR_MODEL", "google/flan-t5-base"
 
 MIN_SENT_WORDS = int(os.getenv("MIN_SENT_WORDS", "5"))
 MIN_CLAIM_WORDS = int(os.getenv("MIN_CLAIM_WORDS", "4"))
+MAX_CLAIM_WORDS = int(os.getenv("MAX_CLAIM_WORDS", "36"))
 MAX_INPUT_CHARS_PER_SENT = int(os.getenv("MAX_INPUT_CHARS_PER_SENT", "700"))
 MAX_NEW_TOKENS = int(os.getenv("MAX_NEW_TOKENS", "96"))
 MAX_INPUT_CHARS_PER_SUMMARY_CHUNK = int(os.getenv("MAX_INPUT_CHARS_PER_SUMMARY_CHUNK", "900"))
@@ -184,6 +185,54 @@ def _extract_capitalized_entities(text: str) -> List[str]:
     return results
 
 
+def _pick_context_entity(text: str) -> Optional[str]:
+    """
+    Pick a likely entity that can replace vague follow-up subjects such as "the airline".
+    """
+    entities = _extract_capitalized_entities(text)
+    if not entities:
+        return None
+
+    preferred_patterns = [
+        r"\b(airlines?|airways|administration|department|agency|company|court|ministry)\b",
+    ]
+    for entity in entities:
+        if any(re.search(pattern, entity, flags=re.IGNORECASE) for pattern in preferred_patterns):
+            return entity
+
+    return entities[0]
+
+
+def _replace_vague_subject_with_entity(text: str, entity: Optional[str]) -> str:
+    if not entity:
+        return text
+
+    replacements = [
+        r"^(the airline|airline)\b",
+        r"^(the company|company)\b",
+        r"^(the agency|agency)\b",
+        r"^(the department|department)\b",
+    ]
+    updated = text
+    for pattern in replacements:
+        updated = re.sub(pattern, entity, updated, flags=re.IGNORECASE)
+    return updated
+
+
+def _prefer_context_entity(current: Optional[str], candidate: Optional[str]) -> Optional[str]:
+    if not candidate:
+        return current
+    if not current:
+        return candidate
+
+    current_terms = len(current.split())
+    candidate_terms = len(candidate.split())
+    if candidate_terms >= current_terms:
+        return candidate
+
+    return current
+
+
 def _has_strong_factual_signal(text: str) -> bool:
     """
     Detect whether a sentence/claim looks fact-like enough to verify.
@@ -278,6 +327,23 @@ def _contains_subjective_language(text: str) -> bool:
     )
 
 
+def _contains_background_language(text: str) -> bool:
+    """
+    Detect broad narrative/background wording that is usually less useful than concrete events.
+    """
+    return bool(
+        re.search(
+            r"\b("
+            r"tumultuous ride|pioneer of|has endured|have endured|became the pioneer|"
+            r"history of|long-running|long running|over the years|for decades|"
+            r"legacy|reputation|status as"
+            r")\b",
+            text,
+            flags=re.IGNORECASE,
+        )
+    )
+
+
 def _has_finite_verb(text: str) -> bool:
     """
     Require at least one finite verb or auxiliary so we keep complete factual statements.
@@ -295,7 +361,9 @@ def _has_finite_verb(text: str) -> bool:
             r"kills|killed|injures|injured|cuts|cut|raises|raised|falls|fell|"
             r"launches|launched|signs|signed|opens|opened|closes|closed|"
             r"issues|issued|elects|elected|fines|fined|suspends|suspended|"
-            r"sentences|sentenced|creates|created|causes|caused"
+            r"sentences|sentenced|creates|created|causes|caused|"
+            r"files|filed|blocks|blocked|blames|blamed|cancels|canceled|cancelled|"
+            r"merges|merged|fails|failed"
             r")\b",
             text,
             flags=re.IGNORECASE,
@@ -415,10 +483,13 @@ def _rule_claim_score(text: str) -> float:
     if not _contains_subjective_language(text):
         score += 0.4
 
+    if _contains_background_language(text):
+        score -= 1.2
+
     # Penalize overly long multi-fact claims
-    if len(tokens) > 26:
+    if len(tokens) > 32:
         score -= 1.0
-    elif len(tokens) > 20:
+    elif len(tokens) > 24:
         score -= 0.5
 
     # Penalize connective-heavy claims because they often bundle multiple facts
@@ -434,6 +505,7 @@ def _split_long_rule_sentence(sentence: str) -> List[str]:
     This is only a fallback, not a full parser.
     """
     sentence = _normalize_spaces(sentence)
+    context_entity = _pick_context_entity(sentence)
     parts = [sentence]
 
     # First split on strong punctuation separators
@@ -441,22 +513,45 @@ def _split_long_rule_sentence(sentence: str) -> List[str]:
     for part in parts:
         stage_1.extend([p.strip(" ,;") for p in re.split(r"\s*;\s*|\s+--\s+|\s+\-\s+", part) if p.strip(" ,;")])
 
-    # Then split on contrastive connectors that often merge multiple facts
+    # Then split on connectors that often merge multiple news facts
     stage_2 = []
     for part in stage_1:
-        split_parts = re.split(r"\b(?:but|while|however)\b", part, flags=re.IGNORECASE)
+        split_parts = re.split(
+            r"\b(?:but|while|however|after|because|since|following)\b",
+            part,
+            flags=re.IGNORECASE,
+        )
         stage_2.extend([p.strip(" ,;") for p in split_parts if p.strip(" ,;")])
 
-    # Then split on "and" only for very long segments
-    final_parts = []
+    # Then split on relative clauses and light attribution boundaries.
+    stage_3 = []
     for part in stage_2:
+        split_parts = re.split(
+            r"\s+(?:that|which|who)\s+|,\s*(?:which|who)\s+",
+            part,
+            flags=re.IGNORECASE,
+        )
+        stage_3.extend([p.strip(" ,;") for p in split_parts if p.strip(" ,;")])
+
+    # Split comma + and when it joins two event clauses.
+    final_parts = []
+    for part in stage_3:
+        comma_and_parts = [p.strip(" ,;") for p in re.split(r",\s+and\s+", part, flags=re.IGNORECASE) if p.strip(" ,;")]
+        if len(comma_and_parts) > 1:
+            final_parts.extend(comma_and_parts)
+            continue
+
         if len(part.split()) > 18:
             split_parts = re.split(r"\b(?:and)\b", part, flags=re.IGNORECASE)
             final_parts.extend([p.strip(" ,;") for p in split_parts if p.strip(" ,;")])
         else:
             final_parts.append(part)
 
-    return [p for p in final_parts if p]
+    return [
+        _replace_vague_subject_with_entity(p, context_entity)
+        for p in final_parts
+        if p
+    ]
 
 
 def _extract_claims_rule_based_from_sentence(sentence: str) -> List[str]:
@@ -756,7 +851,7 @@ def _claim_is_worth_verifying(text: str) -> bool:
     if len(tokens) < MIN_CLAIM_WORDS:
         return False
 
-    if len(tokens) > 24:
+    if len(tokens) > MAX_CLAIM_WORDS:
         return False
 
     if _looks_like_fragment(text):
@@ -928,6 +1023,7 @@ def extract_claims_progressively(article_text: str, top_k: int = TOP_K_CLAIMS):
             return
 
     running_candidates = []
+    context_entity = None
     usable_sentences = [
         (sent_idx + 1, _normalize_spaces(sentence))
         for sent_idx, sentence in enumerate(sentences)
@@ -936,6 +1032,7 @@ def extract_claims_progressively(article_text: str, top_k: int = TOP_K_CLAIMS):
     ]
 
     for idx, (sent_id, source_sentence) in enumerate(usable_sentences, start=1):
+        source_sentence = _replace_vague_subject_with_entity(source_sentence, context_entity)
         sentence_candidates = []
         for claim_text in _extract_claims_rule_based_from_sentence(source_sentence):
             claim_text = _clean_claim_candidate(claim_text)
@@ -964,6 +1061,9 @@ def extract_claims_progressively(article_text: str, top_k: int = TOP_K_CLAIMS):
                 ),
                 "current_claims": _finalize_claim_candidates(running_candidates, top_k),
             }
+
+        updated_context_entity = _pick_context_entity(source_sentence)
+        context_entity = _prefer_context_entity(context_entity, updated_context_entity)
 
     yield {
         "stage": "done",

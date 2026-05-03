@@ -7,7 +7,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from datasets import Dataset
 from transformers import (
-    BertTokenizer,
+    AutoTokenizer,
+    AutoModelForSequenceClassification,
     BertForSequenceClassification,
     Trainer,
     TrainingArguments,
@@ -51,7 +52,7 @@ def train_baseline(debug_sample_size=None):
     train_dataset = Dataset.from_pandas(train_df)
     test_dataset = Dataset.from_pandas(test_df)
 
-    tokenizer = BertTokenizer.from_pretrained(BASELINE_MODEL_NAME)
+    tokenizer = AutoTokenizer.from_pretrained(BASELINE_MODEL_NAME, use_fast=True)
 
     def tokenize_function(examples):
         return tokenizer(
@@ -119,8 +120,11 @@ def train_baseline(debug_sample_size=None):
 @lru_cache(maxsize=1)
 def load_baseline_model():
     model_path = os.path.join(BASELINE_MODEL_DIR, "final")
-    tokenizer = BertTokenizer.from_pretrained(model_path)
-    model = BertForSequenceClassification.from_pretrained(model_path)
+    if not os.path.isdir(model_path):
+        raise FileNotFoundError(f"Baseline model directory not found: {model_path}")
+
+    tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=True)
+    model = AutoModelForSequenceClassification.from_pretrained(model_path)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)

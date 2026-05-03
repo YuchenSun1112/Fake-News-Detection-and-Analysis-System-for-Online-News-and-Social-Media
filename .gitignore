@@ -3,11 +3,17 @@ __pycache__/
 .venv/
 env/
 venv/
+uv.lock
 
-models/
-*.bin
-*.pt
-*.pth
+models/*
+!models/baseline_classifier/
+!models/baseline_classifier/final/
+!models/baseline_classifier/final/**
+!models/claim_extractor/
+!models/claim_extractor/final/
+!models/claim_extractor/final/**
+models/**/checkpoint-*/
+models/**/logs/
 
 .DS_Store
 Thumbs.db
