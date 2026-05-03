@@ -1,0 +1,505 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1.0in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage[hidelinks]{hyperref}
+
+\hypersetup{
+    hidelinks,
+    pdfauthor={Sun Yuchen, Zhao Jiahui, Zhang Yuxuan},
+    pdftitle={Fact-based News Verification System}
+}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.18\baselineskip}
+\setlength{\emergencystretch}{3em}
+\setlist[itemize]{leftmargin=*, itemsep=0.12em, topsep=0.15em, partopsep=0em, parsep=0pt}
+\setlist[enumerate]{leftmargin=*, itemsep=0.12em, topsep=0.15em, partopsep=0em, parsep=0pt}
+\renewcommand{\arraystretch}{1.18}
+\setcounter{secnumdepth}{3}
+
+\titleformat{\section}
+  {\Large\bfseries}
+  {\thesection}{0.75em}{}
+\titlespacing*{\section}{0pt}{1.0em}{0.35em}
+\titleformat{\subsection}
+  {\large\bfseries}
+  {\thesubsection}{0.75em}{}
+\titlespacing*{\subsection}{0pt}{0.7em}{0.2em}
+\titleformat{\subsubsection}
+  {\normalsize\bfseries}
+  {\thesubsubsection}{0.75em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[C]{\thepage}
+\setlength{\headheight}{14pt}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{C}{>{\centering\arraybackslash}X}
+
+\begin{document}
+\pagenumbering{gobble}
+
+\begin{center}
+    {\LARGE \textbf{Fact-based News Verification System}\par}
+    \vspace{0.15em}
+    {\Large A Hybrid Classification and Evidence-based Verification Prototype\par}
+
+    \vspace{0.1in}
+
+    \begin{tabularx}{\textwidth}{@{}CCC@{}}
+        \textbf{Name} & \textbf{Student ID} & \textbf{Email} \\
+        Sun Yuchen & A0326248B & e1538079@u.nus.edu \\
+        Zhao Jiahui & A0329852U & e1554179@u.nus.edu \\
+        Zhang Yuxuan & A0285664N & e1216649@u.nus.edu \\
+    \end{tabularx}
+\end{center}
+
+\noindent\textbf{Abstract}: This report describes a fake-news detection and evidence-based news verification prototype for online news and social media content. The original project proposal focused on offline text analysis: a BERT fake/real classifier, topic modeling, sentiment analysis, and a Streamlit interface. After project feedback, the design was revised because judging only by writing style or offline textual patterns is not sufficient for factual verification. The implemented system therefore keeps BERT as a baseline signal, but extends the solution with claim extraction, live evidence retrieval, evidence comparison, and article-level verdict aggregation.
+
+\smallskip
+\noindent\textbf{Keywords}: BERT Classification, Claim Extraction, Evidence Retrieval, Evidence Comparison
+
+\pagenumbering{roman}
+\tableofcontents
+\newpage
+\pagenumbering{arabic}
+
+
+\section{The Business Problem}
+
+Online news and social media platforms spread information quickly, but users do
+not always have an efficient way to check whether a news item is factually
+supported. A misleading article may use credible language while still making
+claims that are unsupported, contradicted, or unverifiable.
+
+The initial proposal treated fake-news detection mainly as an offline NLP
+classification problem. In that framing, the system learns textual patterns from
+labeled examples and predicts whether a new article looks fake or real. This is
+useful as a screening signal, but it has three important weaknesses:
+
+\begin{itemize}
+    \item it may learn writing style, source patterns, or topic bias instead of
+    verifying factual correctness;
+    \item it cannot explain which claims in the article are true, false, or
+    unsupported;
+    \item it struggles with real-world cases where a well-written article
+    contains a few false factual claims.
+\end{itemize}
+
+Based on this limitation, the business problem was refined from ``classify
+whether the text looks fake'' to ``help users verify whether important claims in
+the article are supported by external evidence.'' The system should:
+
+\begin{itemize}
+    \item classify whether a news item appears fake or real based on labeled
+    training data;
+    \item extract factual claims from the submitted article;
+    \item retrieve external evidence related to each claim through search;
+    \item compare each claim with retrieved evidence and show whether the
+    evidence supports, refutes, or cannot verify it;
+    \item provide an interpretable article-level verdict rather than only a
+    black-box prediction.
+\end{itemize}
+
+The intended users are students, researchers, journalists, and general readers
+who need an explainable first-pass news verification tool. The prototype is not
+designed to replace professional fact-checking, but to demonstrate how machine
+learning and evidence retrieval can support more transparent verification.
+
+\section{The Datasets Used}
+
+The repository contains four CSV files under the \code{data/} directory. These
+files follow the minimal FakeNewsNet-style structure for the GossipCop and
+PolitiFact subsets: each row contains a news identifier, article URL, title, and
+tweet identifiers. In the current implementation, \code{src/data\_loader.py}
+uses the title column as the primary text source because full article bodies are
+not included in the local CSV files.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Local datasets used by the baseline classifier}
+    \begin{tabularx}{\textwidth}{@{}lrrY@{}}
+        \toprule
+        \textbf{File} & \textbf{Rows} & \textbf{Label} & \textbf{Fields} \\
+        \midrule
+        \code{gossipcop\_fake.csv} & 5,323 & Fake & \code{id}, \code{news\_url}, \code{title}, \code{tweet\_ids} \\
+        \code{gossipcop\_real.csv} & 16,817 & Real & \code{id}, \code{news\_url}, \code{title}, \code{tweet\_ids} \\
+        \code{politifact\_fake.csv} & 432 & Fake & \code{id}, \code{news\_url}, \code{title}, \code{tweet\_ids} \\
+        \code{politifact\_real.csv} & 624 & Real & \code{id}, \code{news\_url}, \code{title}, \code{tweet\_ids} \\
+        \midrule
+        \textbf{Total} & \textbf{23,196} & -- & Title-level fake/real training data \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+The class distribution in the local data is imbalanced: 17,441 rows are labeled
+real and 5,755 rows are labeled fake. The current baseline therefore should be
+described as a headline or title classifier, not a full article-content
+classifier. For live evidence retrieval, the system uses the GNews API rather
+than a static local evidence corpus.
+
+\subsection{Dataset Plan Compared with Final Implementation}
+
+The proposal planned to use the Kaggle Fake News Dataset as the primary offline
+training source and supplement it with 200--500 manually collected examples
+from fact-checking websites such as Snopes and PolitiFact. That plan was
+appropriate for the original classifier-centered design. However, after the
+scope shifted toward search and evidence comparison, the project also needed a
+retrieval source for current external evidence.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Dataset and evidence-source evolution}
+    \begin{tabularx}{\textwidth}{@{}p{0.24\textwidth}p{0.34\textwidth}Y@{}}
+        \toprule
+        \textbf{Stage} & \textbf{Planned or Used Data} & \textbf{Role in the System} \\
+        \midrule
+        Proposal stage & Kaggle fake-news dataset with title, text, and label fields & Primary offline data for training a BERT fake/real classifier. \\
+        Proposal stage & Self-collected Snopes and PolitiFact samples & Additional fact-checked examples for diversity and realistic evaluation. \\
+        Current repository & GossipCop and PolitiFact CSV files in \code{data/} & Local title-level fake/real data for the baseline classifier. \\
+        Current repository & GNews API search results & Live external evidence source for claim-level retrieval and comparison. \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\section{The Solution Approaches}
+
+The implemented solution evolved from the original offline NLP plan into a
+hybrid system with two complementary parts: a baseline supervised classifier and
+an evidence-based verification pipeline.
+
+\subsection{Design Evolution from the Proposal}
+
+The proposal contained three offline analysis modules: fake-news classification,
+topic modeling, and sentiment analysis. The revised design keeps the fake/real
+classifier, but changes the supporting modules. Topic and sentiment can describe
+an article, but they do not verify factual claims. For example, an article can
+have a neutral sentiment and a clear political topic while still containing
+false numbers, fabricated events, or misleading attributions.
+
+Therefore, the final direction prioritizes search and comparison. The key
+change is that the system no longer treats the input text alone as the only
+evidence. Instead, it extracts factual claims, searches for related external
+news, compares the claim with retrieved evidence, and then explains the final
+verdict.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Original proposal versus revised solution}
+    \begin{tabularx}{\textwidth}{@{}p{0.24\textwidth}p{0.34\textwidth}Y@{}}
+        \toprule
+        \textbf{Component} & \textbf{Original Proposal} & \textbf{Revised / Implemented Direction} \\
+        \midrule
+        Core detection & BERT classifier predicts fake or real from article text. & BERT remains as a baseline prior, but the final verdict also uses claim-level evidence. \\
+        Supporting analysis & Topic modeling and sentiment analysis enrich interpretation. & Claim extraction, evidence retrieval, and claim-evidence comparison provide factual support. \\
+        Evidence source & Offline labeled dataset only. & Local dataset for baseline training plus GNews search for live evidence. \\
+        Explanation & Prediction probability, topic, and sentiment. & Extracted claims, retrieval queries, evidence articles, support/refute/NEI labels, and final aggregation. \\
+        Main limitation addressed & Text classification can detect suspicious writing patterns. & Evidence comparison addresses whether concrete factual claims are externally supported. \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\subsection{Baseline Fake/Real Classification}
+
+The baseline classifier is implemented in the \code{baseline\_model.py} module.
+It fine-tunes \code{bert-base-uncased} for binary sequence classification. The data
+loader combines the news title and cleaned text into a \code{final\_text} field
+and assigns label \code{1} to real news and label \code{0} to fake news. The
+training code uses an 80/20 train-test split, stratification by label, three
+training epochs, early stopping, and standard classification metrics: accuracy,
+precision, recall, and F1.
+
+In the revised system, this classifier is intentionally treated as a baseline
+rather than the whole decision mechanism. Its role is to estimate whether the
+article resembles fake or real examples in the offline dataset. The evidence
+pipeline then checks whether the article's factual claims can be supported by
+external sources.
+
+\subsection{Evidence-based Claim Verification}
+
+The second approach is designed to make the system more explainable. Instead of
+only returning a fake/real prediction, the application performs claim-level
+verification:
+
+\begin{enumerate}
+    \item \textbf{Text cleaning:} \code{src/cleaner.py} normalizes user input.
+    \item \textbf{Claim extraction:} \code{src/claim\_extractor.py} splits the
+    article into chunks, filters weak or subjective statements, and selects
+    factual claims containing entities, dates, numbers, or event verbs.
+    \item \textbf{Evidence retrieval:} \code{src/retriever.py} builds several
+    search queries per claim, calls the GNews API, deduplicates retrieved
+    articles, and ranks evidence using title overlap, text overlap, entity
+    matches, number matches, and API rank.
+    \item \textbf{Claim verification:} \code{src/verifier.py} assigns one of
+    three labels using token overlap, number consistency, and negation/polarity
+    signals: \code{supported}, \code{refuted}, or \code{not enough information}.
+    \item \textbf{Final aggregation:} \code{src/aggregator.py} combines
+    claim-level labels and confidence scores into \code{Likely True},
+    \code{Likely False}, or \code{Unverified}.
+\end{enumerate}
+
+\subsection{User Interface}
+
+The Streamlit application in \code{app.py} exposes the full workflow. It shows
+the baseline classifier result, extraction progress, claim-level retrieval
+queries, best evidence, verification labels, confidence values, and final
+verdict. This interface is important because the project goal is not only
+prediction accuracy, but also interpretability.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Main implementation modules}
+    \begin{tabularx}{\textwidth}{@{}p{0.31\textwidth}Y@{}}
+        \toprule
+        \textbf{Module} & \textbf{Responsibility} \\
+        \midrule
+        \code{app.py} & Streamlit interface and end-to-end pipeline controller. \\
+        \code{src/data\_loader.py} & Loads and normalizes GossipCop and PolitiFact CSV files. \\
+        \code{src/baseline\_model.py} & Trains and runs the BERT baseline classifier. \\
+        \code{src/claim\_extractor.py} & Extracts retrieval-ready factual claims from articles. \\
+        \code{src/retriever.py} & Retrieves and ranks external evidence from GNews. \\
+        \code{src/verifier.py} & Produces claim-level support/refute/NEI decisions. \\
+        \code{src/aggregator.py} & Produces the final article-level verdict. \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\section{Test Results Demonstrating System Performance}
+
+The repository contains the code needed to train and evaluate the baseline
+classifier, but it does not currently include a saved trained model,
+checkpoint directory, evaluation log, or recorded metric table. Therefore this
+report should not claim a numerical accuracy, precision, recall, or F1 score
+until the training script has been run and its outputs have been saved.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Current test evidence available in the repository}
+    \begin{tabularx}{\textwidth}{@{}p{0.28\textwidth}p{0.22\textwidth}Y@{}}
+        \toprule
+        \textbf{Test or Evidence} & \textbf{Current Status} & \textbf{Interpretation} \\
+        \midrule
+        Dataset inspection & Completed & The four local CSV files contain 23,196 title-level records with fake/real labels. \\
+        Baseline metrics & Pending & \code{src/baseline\_model.py} computes accuracy, precision, recall, and F1, but no saved evaluation output is present in the repository. \\
+        End-to-end verification & Partially implemented & The Streamlit app wires cleaning, baseline prediction, claim extraction, retrieval, verification, and aggregation. Runtime quality depends on a trained baseline model and a valid \code{GNEWS\_API\_KEY}. \\
+        Report build check & Passed & The LaTeX report compiles successfully into \code{report/report.pdf}. \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+After model training, the performance section should be updated with the
+following metrics:
+
+\begin{table}[htbp]
+    \centering
+    \caption{Baseline classifier result table to fill after training}
+    \begin{tabularx}{0.88\textwidth}{@{}lYYYY@{}}
+        \toprule
+        \textbf{Model} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} \\
+        \midrule
+        BERT title classifier & Pending & Pending & Pending & Pending \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+For the evidence-based verification pipeline, a stronger evaluation would
+require manually labeled claim-evidence pairs. The recommended metrics are
+claim-label accuracy, support/refute/NEI macro-F1, evidence retrieval precision
+at top $k$, and article-verdict agreement with human fact-checking labels.
+
+\subsection{Evaluation Implications of the Revised Design}
+
+The proposal evaluation plan focused on classifier metrics such as accuracy,
+precision, recall, F1, and confusion matrices. Those metrics remain necessary
+for the BERT baseline, but they are no longer sufficient for the full system.
+Because the system now performs search and evidence comparison, evaluation
+should also check whether retrieved evidence is relevant and whether the
+claim-level labels are correct.
+
+A complete evaluation should therefore include:
+
+\begin{itemize}
+    \item \textbf{Baseline classification performance:} accuracy, precision,
+    recall, F1, and confusion matrix on held-out title/article examples.
+    \item \textbf{Claim extraction quality:} whether extracted claims are
+    factual, specific, non-duplicate, and searchable.
+    \item \textbf{Retrieval quality:} whether top-ranked GNews results are
+    actually related to the claim.
+    \item \textbf{Comparison quality:} whether the verifier correctly assigns
+    supported, refuted, or not-enough-information labels.
+    \item \textbf{End-user usefulness:} whether the displayed evidence makes the
+    final verdict understandable to users.
+\end{itemize}
+
+\section{Conclusions}
+
+The project implements a practical and explainable prototype for fake-news
+detection and factual verification. The baseline BERT classifier provides a
+fast fake/real signal from title-level labeled data, while the claim-level
+pipeline improves transparency by showing extracted claims, retrieval queries,
+evidence snippets, verification labels, and the reasoning behind the final
+verdict.
+
+Compared with the proposal-stage design, the final system better addresses the
+project feedback that a purely offline fake-news classifier is incomplete.
+Offline classification can identify suspicious writing patterns, but factual
+verification requires checking claims against external information. The revised
+system therefore moves from style-based detection toward evidence-based
+verification.
+
+The main conclusion is that the system design is more informative than a single
+black-box classifier, but the current repository should be presented as an
+implemented prototype rather than a fully validated production system. The next
+required step is to run baseline training, save the evaluation metrics, and
+create a manually labeled claim-evidence test set for the verification pipeline.
+
+\section{References to Public Libraries, Models, and Source Code}
+
+This project uses public Python libraries, pretrained models, public dataset
+resources, and public API documentation. The items below separate resources used
+directly in the current implementation from resources referenced in the original
+proposal.
+
+\subsection{Public Libraries Used in the Implementation}
+
+\begin{enumerate}
+    \item \textbf{Streamlit}. Used to build the interactive web interface in
+    \code{app.py}. Official documentation:
+    \href{https://docs.streamlit.io/}{Streamlit documentation}. Public source
+    code:
+    \href{https://github.com/streamlit/streamlit}{streamlit/streamlit}.
+
+    \item \textbf{PyTorch}. Used as the deep learning runtime for BERT training
+    and inference in \code{src/baseline\_model.py}. Official documentation:
+    \href{https://docs.pytorch.org/docs/stable/index.html}{PyTorch documentation}.
+    Public source code:
+    \href{https://github.com/pytorch/pytorch}{pytorch/pytorch}.
+
+    \item \textbf{Hugging Face Transformers}. Used for BERT tokenization,
+    sequence-classification model loading, training configuration, the Trainer
+    API, and the optional text-generation pipeline in the claim extractor.
+    Official documentation:
+    \href{https://huggingface.co/docs/transformers}{Transformers documentation}.
+    Public source code:
+    \href{https://github.com/huggingface/transformers}{huggingface/transformers}.
+
+    \item \textbf{Hugging Face Datasets}. Used to convert pandas data frames
+    into Trainer-compatible datasets for baseline model training. Official
+    documentation:
+    \href{https://huggingface.co/docs/datasets}{Datasets documentation}.
+    Public source code:
+    \href{https://github.com/huggingface/datasets}{huggingface/datasets}.
+
+    \item \textbf{scikit-learn}. Used for stratified train-test splitting and
+    classification metrics including accuracy, precision, recall, and F1.
+    Official user guide:
+    \href{https://scikit-learn.org/stable/user_guide.html}{scikit-learn user guide}.
+    Public source code:
+    \href{https://github.com/scikit-learn/scikit-learn}{scikit-learn/scikit-learn}.
+
+    \item \textbf{pandas}. Used for CSV loading, dataset normalization, and
+    tabular preprocessing. Official documentation:
+    \href{https://pandas.pydata.org/pandas-docs/stable/}{pandas documentation}.
+    Public source code:
+    \href{https://github.com/pandas-dev/pandas}{pandas-dev/pandas}.
+
+    \item \textbf{NumPy}. Listed as a project dependency and commonly used by
+    the scientific Python stack that supports model training and metrics.
+    Official documentation:
+    \href{https://numpy.org/doc/stable/}{NumPy documentation}.
+    Public source code:
+    \href{https://github.com/numpy/numpy}{numpy/numpy}.
+
+    \item \textbf{Requests}. Used by \code{src/retriever.py} to call the GNews
+    search endpoint. Official documentation:
+    \href{https://requests.readthedocs.io/}{Requests documentation}.
+    Public source code:
+    \href{https://github.com/psf/requests}{psf/requests}.
+
+    \item \textbf{python-dotenv}. Used in \code{config.py} to load
+    \code{GNEWS\_API\_KEY} and other environment variables from a local
+    \code{.env} file. Public source code and documentation:
+    \href{https://github.com/theskumar/python-dotenv}{theskumar/python-dotenv}.
+\end{enumerate}
+
+\subsection{Models, APIs, and Dataset Resources}
+
+\begin{enumerate}
+    \item \textbf{\code{bert-base-uncased}}. Used as the pretrained baseline
+    encoder for binary fake/real sequence classification. Hugging Face model
+    card:
+    \href{https://huggingface.co/google-bert/bert-base-uncased}{Hugging Face \code{bert-base-uncased} model card}.
+    Original BERT public source code and model release:
+    \href{https://github.com/google-research/bert}{google-research/bert}.
+
+    \item \textbf{GNews API}. Used as the live evidence source for search-based
+    claim verification. The implementation calls the GNews search endpoint and
+    re-ranks returned articles locally. Official API documentation:
+    \href{https://docs.gnews.io/?lang=en}{GNews API documentation}.
+
+    \item \textbf{FakeNewsNet}. The local GossipCop and PolitiFact CSV files
+    follow the minimal FakeNewsNet-style public dataset structure:
+    \code{id}, \code{news\_url}, \code{title}, and \code{tweet\_ids}. Public
+    repository:
+    \href{https://github.com/KaiDMML/FakeNewsNet}{KaiDMML/FakeNewsNet}.
+
+    \item \textbf{Kaggle Fake and Real News Dataset}. Referenced in the original
+    proposal as a planned offline training dataset, but not present in the
+    current repository implementation. Public dataset page:
+    \href{https://www.kaggle.com/datasets/clmentbisaillon/fake-and-real-news-dataset}{Kaggle Fake and Real News Dataset}.
+\end{enumerate}
+
+\subsection{Project Source Code Organization}
+
+The project implementation itself is organized into the following local source
+files:
+
+\begin{itemize}
+    \item \code{app.py}: Streamlit interface and end-to-end runtime controller.
+    \item \code{config.py}: shared paths, model settings, GNews endpoint, and
+    environment-variable loading.
+    \item \code{src/data\_loader.py}: CSV loading and label normalization.
+    \item \code{src/baseline\_model.py}: BERT baseline training and prediction.
+    \item \code{src/claim\_extractor.py}: claim extraction and claim selection.
+    \item \code{src/retriever.py}: GNews query generation, retrieval,
+    deduplication, and evidence ranking.
+    \item \code{src/verifier.py}: claim-evidence comparison and
+    support/refute/NEI labeling.
+    \item \code{src/aggregator.py}: article-level final verdict aggregation.
+\end{itemize}
+
+\section{Individual Contribution of Each Team Member}
+
+The proposal identifies three team members: Sun Yuchen, Zhao Jiahui, and Zhang
+Yuxuan. The repository does not include a detailed contribution log, so the
+following contribution summary should be reviewed and adjusted by the team
+before final submission.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Team contribution summary}
+    \begin{tabularx}{\textwidth}{@{}p{0.24\textwidth}p{0.28\textwidth}Y@{}}
+        \toprule
+        \textbf{Team Member} & \textbf{Main Responsibility} & \textbf{Contribution Details} \\
+        \midrule
+        Sun Yuchen & Business problem, documentation, and evaluation framing & Defined the project motivation, organized the report around the required sections, summarized limitations, and prepared the evaluation discussion. \\
+        Zhao Jiahui & Dataset preparation and baseline model & Prepared the GossipCop/PolitiFact data pipeline, cleaned text fields, configured the BERT baseline classifier, and documented classification metrics to be collected. \\
+        Zhang Yuxuan & Evidence-based verification and system integration & Implemented or integrated claim extraction, GNews retrieval, claim verification, verdict aggregation, and the Streamlit interface. \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\end{document}
