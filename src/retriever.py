@@ -24,28 +24,16 @@ def _token_overlap_ratio(a: str, b: str) -> float:
 
 
 def _clean_keyword(token: str) -> str:
-    """
-    Keep only letters, digits, and percent signs.
-    Remove punctuation such as hyphens, quotes, slashes, etc.
-    """
     token = str(token)
     token = re.sub(r"[^A-Za-z0-9%]", "", token)
     return token.strip()
 
 
 def _extract_numbers(text: str) -> List[str]:
-    """
-    Extract numbers, percentages, and years.
-    Examples: 10, 10.5, 10%, 2024
-    """
     return re.findall(r"\b\d+(?:\.\d+)?%?\b", str(text))
 
 
 def _extract_capitalized_entities(text: str) -> List[str]:
-    """
-    Extract simple capitalized entity-like tokens.
-    Examples: Tesla, Apple, China, Biden
-    """
     blocked_singletons = {
         "A", "An", "The", "It", "This", "That", "These", "Those",
         "He", "She", "They", "We", "You", "I",
@@ -65,30 +53,14 @@ def _extract_capitalized_entities(text: str) -> List[str]:
 
 
 def _match_ratio(items: List[str], text: str) -> float:
-    """
-    Compute the fraction of items that appear in the given text.
-    """
     if not items:
         return 0.0
-
     text_lower = str(text).lower()
-    hits = 0
-    for item in items:
-        if str(item).lower() in text_lower:
-            hits += 1
-
+    hits = sum(1 for item in items if str(item).lower() in text_lower)
     return hits / len(items)
 
 
 def _extract_keywords(claim: str, max_terms: int = 10) -> List[str]:
-    """
-    Extract search-friendly keywords from a claim.
-
-    Improvements over the old version:
-    1. Preserve more entities, numbers, and event/action words.
-    2. Do not over-remove important news verbs such as
-       'announced', 'confirmed', 'denied', etc.
-    """
     raw_words = re.findall(r"\b[\w\-']+\b", str(claim))
 
     stopwords = {
@@ -110,16 +82,9 @@ def _extract_keywords(claim: str, max_terms: int = 10) -> List[str]:
         cleaned = _clean_keyword(word)
         if not cleaned:
             continue
-
         lowered = cleaned.lower()
         if lowered in stopwords:
             continue
-
-        # Keep:
-        # 1) numbers / percentages
-        # 2) capitalized words (likely entities)
-        # 3) longer words
-        # 4) common event/action words in news
         if (
             re.fullmatch(r"\d+(?:\.\d+)?%?", cleaned)
             or word[:1].isupper()
@@ -133,7 +98,6 @@ def _extract_keywords(claim: str, max_terms: int = 10) -> List[str]:
         ):
             keywords.append(cleaned)
 
-    # Deduplicate while preserving order
     seen = set()
     deduped = []
     for keyword in keywords:
@@ -146,93 +110,60 @@ def _extract_keywords(claim: str, max_terms: int = 10) -> List[str]:
 
 
 def _is_bad_query(query: str) -> bool:
-    """
-    Detect low-quality queries that are not worth sending to GNews.
-    """
     if not query or len(query.strip()) < 3:
         return True
-
     tokens = query.split()
     if not tokens:
         return True
-
-    # If most tokens are numeric, the query is probably malformed
-    digit_tokens = sum(
-        1 for token in tokens
-        if re.fullmatch(r"\d+(?:\.\d+)?%?", token)
-    )
+    digit_tokens = sum(1 for token in tokens if re.fullmatch(r"\d+(?:\.\d+)?%?", token))
     if digit_tokens / max(len(tokens), 1) > 0.6:
         return True
-
-    # Single-token short queries are usually too weak
     if len(tokens) == 1 and len(tokens[0]) < 4:
         return True
-
     return False
 
 
 def build_query_candidates(claim: str) -> List[str]:
-    """
-    Generate multiple search queries for the same claim.
-
-    Improvements:
-    1. Do not rely only on "long keywords -> short keywords".
-    2. Add multiple retrieval views:
-       - cleaned full claim
-       - entity + keywords
-       - keyword-rich query
-       - short core query
-       - entity + numbers
-       - non-numeric query
-    3. Prepare for multi-query retrieval and merge.
-    """
     keywords = _extract_keywords(claim, max_terms=10)
     entities = _extract_capitalized_entities(claim)
     numbers = _extract_numbers(claim)
 
     candidates = []
 
-    # 1) Cleaned full claim
     raw = re.sub(r"[^A-Za-z0-9\s%]", " ", str(claim))
     raw = re.sub(r"\s+", " ", raw).strip()
     raw = re.sub(
         r"^(previously|currently|formerly|reportedly|allegedly|meanwhile|however|later)\s+",
-        "",
-        raw,
-        flags=re.IGNORECASE,
+        "", raw, flags=re.IGNORECASE,
     )
     if raw:
-        candidates.append(raw[:120])
+        raw_words = raw.split()
+        if len(raw_words) > 8:
+            raw = " ".join(raw_words[:8])
+        candidates.append(raw)
 
-    # 2) Entities + keywords
     if entities and keywords:
         candidates.append(" ".join((entities[:2] + keywords[:4])[:6]))
 
-    # 3) Full keyword-rich query
     if keywords:
         candidates.append(" ".join(keywords[:8]))
 
-    # 4) Short core query
     if len(keywords) >= 4:
         candidates.append(" ".join(keywords[:4]))
     elif len(keywords) >= 2:
         candidates.append(" ".join(keywords[:2]))
 
-    # 5) Entities + numbers
     if entities and numbers:
         candidates.append(" ".join((entities[:2] + numbers[:2])[:4]))
 
-    # 6) Non-numeric keyword query
     non_numeric_keywords = [
-        keyword for keyword in keywords
-        if not re.fullmatch(r"\d+(?:\.\d+)?%?", keyword)
+        kw for kw in keywords if not re.fullmatch(r"\d+(?:\.\d+)?%?", kw)
     ]
     if len(non_numeric_keywords) >= 5:
         candidates.append(" ".join(non_numeric_keywords[:5]))
     elif len(non_numeric_keywords) >= 3:
         candidates.append(" ".join(non_numeric_keywords[:3]))
 
-    # Deduplicate + filter out poor queries
     final_candidates = []
     seen = set()
     for query in candidates:
@@ -249,30 +180,14 @@ def build_query_candidates(claim: str) -> List[str]:
 
 
 def _format_gnews_articles(articles: List[Dict], claim: str) -> List[Dict]:
-    """
-    Re-rank retrieved GNews articles locally.
-
-    Problems in the old version:
-    - Mostly relied on token overlap
-    - Over-relied on original GNews ranking order
-
-    New version adds:
-    - title_overlap_score
-    - text_overlap_score
-    - entity_match_score
-    - number_match_score
-    - matched_entities
-    - matched_numbers
-    """
     results = []
-
     claim_entities = _extract_capitalized_entities(claim)
     claim_numbers = _extract_numbers(claim)
 
     for idx, article in enumerate(articles):
         source_info = article.get("source", {}) or {}
-        title = article.get("title", "") or ""
-        text = article.get("description", "") or article.get("content", "") or ""
+        title = (article.get("title", "") or "")[:300]
+        text = (article.get("description", "") or article.get("content", "") or "")[:1000]
         combined_text = f"{title}. {text}".strip()
 
         title_overlap = _token_overlap_ratio(claim, title)
@@ -281,7 +196,6 @@ def _format_gnews_articles(articles: List[Dict], claim: str) -> List[Dict]:
         number_match = _match_ratio(claim_numbers, combined_text)
         api_rank_score = 1.0 / (idx + 1)
 
-        # Source credibility is intentionally not included yet
         final_score = (
             0.30 * title_overlap
             + 0.25 * text_overlap
@@ -290,37 +204,33 @@ def _format_gnews_articles(articles: List[Dict], claim: str) -> List[Dict]:
             + 0.10 * api_rank_score
         )
 
-        matched_entities = [
-            entity for entity in claim_entities
-            if entity.lower() in combined_text.lower()
-        ]
-        matched_numbers = [
-            number for number in claim_numbers
-            if number.lower() in combined_text.lower()
-        ]
+        matched_entities = [e for e in claim_entities if e.lower() in combined_text.lower()]
+        matched_numbers = [n for n in claim_numbers if n.lower() in combined_text.lower()]
 
-        results.append(
-            {
-                "evidence_id": idx + 1,
-                "title": title,
-                "text": text,
-                "combined_text": combined_text,
-                "source": source_info.get("name", "Unknown"),
-                "url": article.get("url", ""),
-                "published_at": article.get("publishedAt", ""),
-                "api_rank_score": round(api_rank_score, 4),
-                "title_overlap_score": round(title_overlap, 4),
-                "text_overlap_score": round(text_overlap, 4),
-                "entity_match_score": round(entity_match, 4),
-                "number_match_score": round(number_match, 4),
-                "matched_entities": matched_entities,
-                "matched_numbers": matched_numbers,
-                "score": round(final_score, 4),
-            }
-        )
+        results.append({
+            "evidence_id": idx + 1,
+            "title": title,
+            "text": text,
+            "combined_text": combined_text,
+            "source": source_info.get("name", "Unknown"),
+            "url": article.get("url", ""),
+            "published_at": article.get("publishedAt", ""),
+            "api_rank_score": round(api_rank_score, 4),
+            "title_overlap_score": round(title_overlap, 4),
+            "text_overlap_score": round(text_overlap, 4),
+            "entity_match_score": round(entity_match, 4),
+            "number_match_score": round(number_match, 4),
+            "matched_entities": matched_entities,
+            "matched_numbers": matched_numbers,
+            "score": round(final_score, 4),
+        })
 
     results.sort(key=lambda item: item["score"], reverse=True)
     return results
+
+
+_MAX_RETRIES = int(os.getenv("GNEWS_MAX_RETRIES", "3"))
+_RETRY_BASE_DELAY = float(os.getenv("GNEWS_RETRY_BASE_DELAY", "2.0"))  # seconds
 
 
 def _search_once(query: str, top_k: int) -> Dict:
@@ -333,29 +243,53 @@ def _search_once(query: str, top_k: int) -> Dict:
         "in": "title,description",
     }
 
-    response = requests.get(GNEWS_ENDPOINT, params=params, timeout=REQUEST_TIMEOUT)
-
-    # Respect GNews free-tier rate limits
-    time.sleep(1.05)
-
-    if response.status_code != 200:
+    last_error = None
+    for attempt in range(_MAX_RETRIES):
         try:
-            error_payload = response.json()
-        except Exception:
-            error_payload = response.text
+            response = requests.get(GNEWS_ENDPOINT, params=params, timeout=REQUEST_TIMEOUT)
+        except requests.exceptions.Timeout:
+            last_error = "Request timed out."
+            time.sleep(_RETRY_BASE_DELAY * (2 ** attempt))
+            continue
+        except requests.exceptions.RequestException as exc:
+            return {"ok": False, "articles": [], "error": str(exc)}
 
+        # GNews free tier rate limit — always wait between calls
+        time.sleep(1.05)
+
+        if response.status_code == 429:
+            retry_after = int(response.headers.get("Retry-After", _RETRY_BASE_DELAY * (2 ** attempt)))
+            last_error = f"GNews rate limit hit (429). Waiting {retry_after}s before retry."
+            print(f"[retriever] {last_error}")
+            time.sleep(retry_after)
+            continue
+
+        if response.status_code != 200:
+            try:
+                error_payload = response.json()
+            except Exception:
+                error_payload = response.text
+            return {
+                "ok": False,
+                "articles": [],
+                "error": f"GNews API error {response.status_code}: {error_payload}",
+            }
+
+        data = response.json()
         return {
-            "ok": False,
-            "articles": [],
-            "error": f"GNews API error {response.status_code}: {error_payload}",
+            "ok": True,
+            "articles": data.get("articles", []),
+            "error": None,
         }
 
-    data = response.json()
-    return {
-        "ok": True,
-        "articles": data.get("articles", []),
-        "error": None,
-    }
+    return {"ok": False, "articles": [], "error": last_error or "Max retries exceeded."}
+
+
+def _article_key(article: Dict) -> str:
+    url = str(article.get("url", "")).strip()
+    title = str(article.get("title", "")).strip()
+    published_at = str(article.get("publishedAt", "")).strip()
+    return url if url else f"{title}__{published_at}"
 
 
 def retrieve_evidence(claim: str, top_k: int = TOP_K_EVIDENCE) -> Dict:
@@ -366,13 +300,6 @@ def retrieve_evidence(claim: str, top_k: int = TOP_K_EVIDENCE) -> Dict:
         "results": [...],         # ranked evidence list
         "error": None or "..."
     }
-
-    Core improvements:
-    1. Do not stop after the first query that returns results
-    2. Search with multiple queries
-    3. Merge all retrieved articles
-    4. Deduplicate by URL
-    5. Re-rank globally and return top_k
     """
     if not GNEWS_API_KEY:
         return {
@@ -393,6 +320,7 @@ def retrieve_evidence(claim: str, top_k: int = TOP_K_EVIDENCE) -> Dict:
     all_articles = []
     used_queries = []
     last_error = None
+    seen_keys = set()          # ← 移到循环外，跨 query 累积去重
 
     for query in query_candidates:
         search_result = _search_once(query, top_k=top_k)
@@ -402,16 +330,11 @@ def retrieve_evidence(claim: str, top_k: int = TOP_K_EVIDENCE) -> Dict:
             last_error = search_result["error"]
             continue
 
-        articles = search_result["articles"]
-        if articles:
-            all_articles.extend(articles)
-
-        seen_keys = set()
-        for article in all_articles:
-            url = str(article.get("url", "")).strip()
-            title = str(article.get("title", "")).strip()
-            published_at = str(article.get("publishedAt", "")).strip()
-            seen_keys.add(url if url else f"{title}__{published_at}")
+        for article in search_result["articles"]:
+            key = _article_key(article)
+            if key not in seen_keys:
+                seen_keys.add(key)
+                all_articles.append(article)
 
         if len(seen_keys) >= EARLY_STOP_ARTICLE_COUNT:
             break
@@ -423,18 +346,7 @@ def retrieve_evidence(claim: str, top_k: int = TOP_K_EVIDENCE) -> Dict:
             "error": last_error,
         }
 
-    # Deduplicate: prefer URL, otherwise fall back to title + published_at
-    deduplicated = {}
-    for article in all_articles:
-        url = str(article.get("url", "")).strip()
-        title = str(article.get("title", "")).strip()
-        published_at = str(article.get("publishedAt", "")).strip()
-
-        key = url if url else f"{title}__{published_at}"
-        if key not in deduplicated:
-            deduplicated[key] = article
-
-    ranked_results = _format_gnews_articles(list(deduplicated.values()), claim)
+    ranked_results = _format_gnews_articles(all_articles, claim)
 
     return {
         "query": " | ".join(used_queries),
