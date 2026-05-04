@@ -10,6 +10,54 @@ from config import GNEWS_API_KEY, GNEWS_ENDPOINT, TOP_K_EVIDENCE, REQUEST_TIMEOU
 MAX_QUERY_CANDIDATES = int(os.getenv("MAX_QUERY_CANDIDATES", "3"))
 EARLY_STOP_ARTICLE_COUNT = int(os.getenv("EARLY_STOP_ARTICLE_COUNT", str(max(TOP_K_EVIDENCE * 2, 6))))
 
+# ── Source credibility scores (0.0 – 1.0) ────────────────────────────────────
+# Tier 1 (0.9+): major wire services and public broadcasters
+# Tier 2 (0.7–0.89): established national newspapers
+# Tier 3 (0.5–0.69): regional / mixed-reliability outlets
+# Unknown sources default to 0.4
+_SOURCE_CREDIBILITY: dict = {
+    # Wire services
+    "reuters": 0.95, "associated press": 0.95, "ap news": 0.95,
+    "afp": 0.93, "bloomberg": 0.92,
+    # Public broadcasters
+    "bbc": 0.92, "bbc news": 0.92, "npr": 0.91,
+    "abc news": 0.88, "cbs news": 0.88, "nbc news": 0.88,
+    "pbs": 0.90, "channel 4": 0.88,
+    # Major newspapers
+    "the new york times": 0.90, "new york times": 0.90,
+    "the washington post": 0.89, "washington post": 0.89,
+    "the guardian": 0.88, "guardian": 0.88,
+    "the wall street journal": 0.89, "wall street journal": 0.89,
+    "financial times": 0.90, "the economist": 0.90,
+    "los angeles times": 0.87, "chicago tribune": 0.85,
+    "the times": 0.87, "the telegraph": 0.85,
+    "le monde": 0.88, "der spiegel": 0.88,
+    # Tech / science
+    "nature": 0.95, "science": 0.95, "mit technology review": 0.90,
+    "wired": 0.82, "ars technica": 0.83, "the verge": 0.80,
+    # Mixed / lower tier
+    "cnn": 0.78, "fox news": 0.65, "daily mail": 0.55,
+    "buzzfeed news": 0.70, "huffpost": 0.72,
+    "indiatimes": 0.60, "ndtv": 0.72, "the hindu": 0.82,
+    "al jazeera": 0.82, "south china morning post": 0.78,
+}
+_SOURCE_CREDIBILITY_DEFAULT = 0.40
+
+
+def _get_source_credibility(source_name: str) -> float:
+    """Return a credibility score for the given source name."""
+    key = str(source_name).lower().strip()
+    # Exact match first
+    if key in _SOURCE_CREDIBILITY:
+        return _SOURCE_CREDIBILITY[key]
+    # Partial match (e.g. "BBC News UK" -> "bbc news")
+    for known, score in _SOURCE_CREDIBILITY.items():
+        if known in key or key in known:
+            return score
+    return _SOURCE_CREDIBILITY_DEFAULT
+
+
+
 
 def _tokenize(text: str) -> List[str]:
     return re.findall(r"\b\w+\b", str(text).lower())
@@ -196,12 +244,15 @@ def _format_gnews_articles(articles: List[Dict], claim: str) -> List[Dict]:
         number_match = _match_ratio(claim_numbers, combined_text)
         api_rank_score = 1.0 / (idx + 1)
 
+        credibility = _get_source_credibility(source_info.get("name", ""))
+
         final_score = (
-            0.30 * title_overlap
-            + 0.25 * text_overlap
+            0.25 * title_overlap
+            + 0.20 * text_overlap
             + 0.20 * entity_match
             + 0.15 * number_match
             + 0.10 * api_rank_score
+            + 0.10 * credibility
         )
 
         matched_entities = [e for e in claim_entities if e.lower() in combined_text.lower()]
@@ -222,6 +273,7 @@ def _format_gnews_articles(articles: List[Dict], claim: str) -> List[Dict]:
             "number_match_score": round(number_match, 4),
             "matched_entities": matched_entities,
             "matched_numbers": matched_numbers,
+            "credibility_score": round(credibility, 4),
             "score": round(final_score, 4),
         })
 
@@ -292,6 +344,23 @@ def _article_key(article: Dict) -> str:
     return url if url else f"{title}__{published_at}"
 
 
+# ── Evidence cache ───────────────────────────────────────────────────────────
+# Keyed by (claim_lower, top_k) — avoids re-hitting GNews for repeated claims
+_evidence_cache: dict = {}
+_CACHE_MAX_SIZE = int(os.getenv("EVIDENCE_CACHE_MAX_SIZE", "200"))
+
+
+def _cache_key(claim: str, top_k: int) -> str:
+    import hashlib
+    text = f"{claim.lower().strip()}|{top_k}"
+    return hashlib.md5(text.encode()).hexdigest()
+
+
+def clear_evidence_cache() -> None:
+    """Call this to invalidate all cached results (e.g. after API key change)."""
+    _evidence_cache.clear()
+
+
 def retrieve_evidence(claim: str, top_k: int = TOP_K_EVIDENCE) -> Dict:
     """
     Return format:
@@ -301,6 +370,11 @@ def retrieve_evidence(claim: str, top_k: int = TOP_K_EVIDENCE) -> Dict:
         "error": None or "..."
     }
     """
+    # Cache check
+    ck = _cache_key(claim, top_k)
+    if ck in _evidence_cache:
+        return _evidence_cache[ck]
+
     if not GNEWS_API_KEY:
         return {
             "query": "",
@@ -348,8 +422,15 @@ def retrieve_evidence(claim: str, top_k: int = TOP_K_EVIDENCE) -> Dict:
 
     ranked_results = _format_gnews_articles(all_articles, claim)
 
-    return {
+    result = {
         "query": " | ".join(used_queries),
         "results": ranked_results[:top_k],
         "error": None,
     }
+
+    # Write to cache (evict oldest if full)
+    if len(_evidence_cache) >= _CACHE_MAX_SIZE:
+        oldest_key = next(iter(_evidence_cache))
+        del _evidence_cache[oldest_key]
+    _evidence_cache[ck] = result
+    return result
