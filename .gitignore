@@ -1,9 +1,9 @@
 __pycache__/
 *.pyc
+.tmp/
 .venv/
 env/
 venv/
-uv.lock
 
 models/*
 !models/baseline_classifier/
@@ -12,6 +12,9 @@ models/*
 !models/claim_extractor/
 !models/claim_extractor/final/
 !models/claim_extractor/final/**
+!models/claim_verifier/
+!models/claim_verifier/final/
+!models/claim_verifier/final/**
 models/**/checkpoint-*/
 models/**/logs/
 
@@ -22,3 +25,6 @@ Thumbs.db
 .vscode/
 
 .env
+
+scripts/
+uv.lock

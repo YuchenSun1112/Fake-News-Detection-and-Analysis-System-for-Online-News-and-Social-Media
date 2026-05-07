@@ -1,8 +1,22 @@
-import os
 import re
 from typing import List, Dict, Optional
 
-from config import TOP_K_CLAIMS
+from src.config import (
+    CLAIM_DEDUP_SIM_THRESHOLD,
+    CLAIM_EXTRACTOR_MODE,
+    CLAIM_EXTRACTOR_MODEL,
+    MAX_CLAIM_WORDS,
+    MAX_CLAIMS_PER_SENTENCE,
+    MAX_INPUT_CHARS_PER_SENT,
+    MAX_INPUT_CHARS_PER_SUMMARY_CHUNK,
+    MAX_NEW_TOKENS,
+    MAX_RETRIEVAL_SUMMARIES_PER_CHUNK,
+    MAX_SUMMARY_CHUNKS,
+    MIN_CLAIM_WORDS,
+    MIN_SENT_WORDS,
+    MIN_SUMMARY_CHUNK_CHARS,
+    TOP_K_CLAIMS,
+)
 from src.cleaner import clean_claim_text
 
 try:
@@ -14,24 +28,7 @@ except Exception:
 # =========================================================
 # Configuration
 # =========================================================
-CLAIM_EXTRACTOR_MODE = os.getenv("CLAIM_EXTRACTOR_MODE", "model").strip().lower()
-CLAIM_EXTRACTOR_MODEL = os.getenv("CLAIM_EXTRACTOR_MODEL", "google/flan-t5-base").strip()
-
-MIN_SENT_WORDS = int(os.getenv("MIN_SENT_WORDS", "5"))
-MIN_CLAIM_WORDS = int(os.getenv("MIN_CLAIM_WORDS", "4"))
-MAX_CLAIM_WORDS = int(os.getenv("MAX_CLAIM_WORDS", "36"))
-MAX_INPUT_CHARS_PER_SENT = int(os.getenv("MAX_INPUT_CHARS_PER_SENT", "700"))
-MAX_NEW_TOKENS = int(os.getenv("MAX_NEW_TOKENS", "96"))
-MAX_INPUT_CHARS_PER_SUMMARY_CHUNK = int(os.getenv("MAX_INPUT_CHARS_PER_SUMMARY_CHUNK", "900"))
-MAX_SUMMARY_CHUNKS = int(os.getenv("MAX_SUMMARY_CHUNKS", "4"))
-MIN_SUMMARY_CHUNK_CHARS = int(os.getenv("MIN_SUMMARY_CHUNK_CHARS", "220"))
-MAX_RETRIEVAL_SUMMARIES_PER_CHUNK = int(os.getenv("MAX_RETRIEVAL_SUMMARIES_PER_CHUNK", "3"))
-
-# Maximum number of atomic claims generated from one sentence
-MAX_CLAIMS_PER_SENTENCE = int(os.getenv("MAX_CLAIMS_PER_SENTENCE", "4"))
-
-# Similarity threshold used for deduplication
-DEDUP_SIM_THRESHOLD = float(os.getenv("CLAIM_DEDUP_SIM_THRESHOLD", "0.82"))
+DEDUP_SIM_THRESHOLD = CLAIM_DEDUP_SIM_THRESHOLD
 
 _SEQ2SEQ_EXTRACTOR = None
 _SEQ2SEQ_LOAD_FAILED = False

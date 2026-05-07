@@ -13,7 +13,6 @@
   "eos_token_id": 1,
   "feed_forward_proj": "gated-gelu",
   "initializer_factor": 1.0,
-  "is_decoder": false,
   "is_encoder_decoder": true,
   "is_gated_act": true,
   "layer_norm_epsilon": 1e-06,
@@ -26,7 +25,6 @@
   "pad_token_id": 0,
   "relative_attention_max_distance": 128,
   "relative_attention_num_buckets": 32,
-  "scale_decoder_outputs": false,
   "task_specific_params": {
     "summarization": {
       "early_stopping": true,
@@ -56,8 +54,8 @@
       "prefix": "translate English to Romanian: "
     }
   },
-  "tie_word_embeddings": true,
-  "transformers_version": "5.2.0",
-  "use_cache": false,
+  "tie_word_embeddings": false,
+  "transformers_version": "4.57.6",
+  "use_cache": true,
   "vocab_size": 32128
 }

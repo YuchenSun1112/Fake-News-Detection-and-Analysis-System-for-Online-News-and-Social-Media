@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 
-from config import (
+from src.config import (
     GOSSIPCOP_FAKE,
     GOSSIPCOP_REAL,
     POLITIFACT_FAKE,

@@ -10,16 +10,10 @@ Changes vs original
 4. Falls back gracefully when baseline is unavailable or unreliable.
 """
 
-import os
 from typing import List, Dict, Optional
 
-from config import REFUTED_WEIGHT, SUPPORTED_WEIGHT, NEI_WEIGHT
-from sentiment_analyser import analyse_evidence_sentiment, SentimentResult
-
-# How much weight the baseline classifier's prediction gets.
-# 0.0 = ignore baseline entirely; 1.0 = ignore claims entirely.
-BASELINE_PRIOR_WEIGHT = float(os.getenv("BASELINE_PRIOR_WEIGHT", "0.25"))
-
+from src.config import BASELINE_PRIOR_WEIGHT, REFUTED_WEIGHT, SUPPORTED_WEIGHT, NEI_WEIGHT
+from src.sentiment_analyser import analyse_evidence_sentiment, SentimentResult
 
 def _verdict_from_scores(
     supported_score: float,
@@ -207,7 +201,7 @@ def aggregate_results(
         else:
             # 没有证据时，对 claim 文本本身做情感分析
             try:
-                from sentiment_analyser import analyse_sentiment
+                from src.sentiment_analyser import analyse_sentiment
                 claim_texts = [
                     item["claim"]["text"]
                     for item in claim_results

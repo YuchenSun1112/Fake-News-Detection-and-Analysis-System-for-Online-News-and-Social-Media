@@ -1,0 +1,26 @@
+{
+  "train": {
+    "total": 30000,
+    "labels": {
+      "entailment": 10000,
+      "contradiction": 10000,
+      "neutral": 10000
+    }
+  },
+  "valid": {
+    "total": 4500,
+    "labels": {
+      "contradiction": 1500,
+      "entailment": 1500,
+      "neutral": 1500
+    }
+  },
+  "test": {
+    "total": 4500,
+    "labels": {
+      "contradiction": 1500,
+      "entailment": 1500,
+      "neutral": 1500
+    }
+  }
+}

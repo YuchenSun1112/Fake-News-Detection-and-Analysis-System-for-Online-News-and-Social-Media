@@ -1,26 +1,16 @@
 import os
 from functools import lru_cache
-import torch
-import pandas as pd
 
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support
-from datasets import Dataset
-from transformers import (
-    AutoTokenizer,
-    AutoModelForSequenceClassification,
-    BertForSequenceClassification,
-    Trainer,
-    TrainingArguments,
-    BertConfig,
-    EarlyStoppingCallback,
-)
+from src.config import BASELINE_MODEL_NAME, BASELINE_MODEL_DIR, MAX_LENGTH
+from src.runtime import configure_temp_dir
 
-from config import BASELINE_MODEL_NAME, BASELINE_MODEL_DIR, MAX_LENGTH
-from src.data_loader import load_baseline_data
+
+configure_temp_dir()
 
 
 def compute_metrics(pred):
+    from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+
     labels = pred.label_ids
     preds = pred.predictions.argmax(-1)
     precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average="binary")
@@ -34,6 +24,19 @@ def compute_metrics(pred):
 
 
 def train_baseline(debug_sample_size=None):
+    from sklearn.model_selection import train_test_split
+    from datasets import Dataset
+    from transformers import (
+        AutoTokenizer,
+        BertForSequenceClassification,
+        Trainer,
+        TrainingArguments,
+        BertConfig,
+        EarlyStoppingCallback,
+    )
+
+    from src.data_loader import load_baseline_data
+
     df = load_baseline_data()
 
     if debug_sample_size is not None:
@@ -119,12 +122,15 @@ def train_baseline(debug_sample_size=None):
 
 @lru_cache(maxsize=1)
 def load_baseline_model():
+    import torch
+    from transformers import AutoTokenizer, BertForSequenceClassification
+
     model_path = os.path.join(BASELINE_MODEL_DIR, "final")
     if not os.path.isdir(model_path):
         raise FileNotFoundError(f"Baseline model directory not found: {model_path}")
 
     tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=True)
-    model = AutoModelForSequenceClassification.from_pretrained(model_path)
+    model = BertForSequenceClassification.from_pretrained(model_path)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
@@ -134,6 +140,8 @@ def load_baseline_model():
 
 
 def predict_baseline(text: str):
+    import torch
+
     tokenizer, model, device = load_baseline_model()
 
     inputs = tokenizer(

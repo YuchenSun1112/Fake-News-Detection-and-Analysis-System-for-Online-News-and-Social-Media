@@ -5,5 +5,5 @@
     1
   ],
   "pad_token_id": 0,
-  "transformers_version": "5.2.0"
+  "transformers_version": "4.57.6"
 }

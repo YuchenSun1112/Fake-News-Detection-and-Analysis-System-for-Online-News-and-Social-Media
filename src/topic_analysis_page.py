@@ -94,7 +94,7 @@ def _is_meaningful_word(word: str) -> bool:
 @st.cache_data(show_spinner=False)
 def _load_dataset(max_per_class: int = 3000) -> pd.DataFrame:
     try:
-        from config import GOSSIPCOP_FAKE, GOSSIPCOP_REAL, POLITIFACT_FAKE, POLITIFACT_REAL
+        from src.config import GOSSIPCOP_FAKE, GOSSIPCOP_REAL, POLITIFACT_FAKE, POLITIFACT_REAL
     except ImportError:
         st.error("Cannot import config.py — make sure you run from the project root.")
         return pd.DataFrame()
