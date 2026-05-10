@@ -8,6 +8,7 @@
 \usepackage{booktabs}
 \usepackage{graphicx}
 \usepackage{float}
+\usepackage[section]{placeins}
 \usepackage{tabularx}
 \usepackage{array}
 \usepackage{enumitem}
@@ -185,7 +186,7 @@ files. These records are mainly title-level rather than full article bodies, so
 the BERT classifier is best understood as a fast article-level prior instead of
 a complete factual verifier.
 
-\begin{table}[htbp]
+\begin{table}[H]
     \centering
     \caption{Local fake/real datasets used for baseline classification}
     \label{tab:baseline-data}
@@ -215,7 +216,7 @@ data closer to the deployed verification task than binary fake/real
 classification. The repository includes the final NLI dataset and saved
 fine-tuned verifier artefacts under \code{models/claim\_verifier/final/}.
 
-\begin{table}[htbp]
+\begin{table}[H]
     \centering
     \caption{Adapted factual-consistency NLI dataset used for verifier fine-tuning}
     \label{tab:nli-data}
@@ -245,10 +246,14 @@ than for the final verification decision.
 
 \section{System Design and Implementation}
 
+\subsection{System Architecture}
+
 The final system is an evidence-based verification pipeline rather than a
 simple fake-news classifier. The BERT classifier remains useful, but it serves
 as an article-level prior alongside sentence-level retrieval and NLI
-verification.
+verification. Figure~\ref{fig:system-structure} summarizes the runtime data
+flow, the auxiliary analysis modules, and the offline model/data assets used by
+the deployed application.
 
 The end-to-end flow of the system is shown below:
 
@@ -260,25 +265,45 @@ $\rightarrow$ Fine-tuned DeBERTa-NLI Verifier $\rightarrow$ Article-level Aggreg
 $\rightarrow$ Final Verdict + Evidence + Sentiment + Topic + Chat
 \end{quote}
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{diagrams/system_structure/system_structure.png}
+    \includegraphics[width=\textwidth,height=0.72\textheight,keepaspectratio]{diagrams/system_structure/system_structure.png}
     \caption{System structure and runtime workflow of the fact-based news verification system.}
     \label{fig:system-structure}
 \end{figure}
 
-This architecture balances speed and interpretability. The BERT classifier gives
-an immediate article-level signal, while the retrieval and NLI stages explain
-which specific factual statements are supported, contradicted, or still
-unverified. Before classification and retrieval, the article is lightly cleaned:
+This architecture balances speed and interpretability. The app first generates
+a quick article-level signal, then builds a sentence-level evidence trail that
+the user can inspect. The topic-analysis and chat tabs share the same project
+interface but are kept separate from the core truth-verification decision.
+
+\subsection{Training and Saved Model Artefacts}
+
+The learned components are trained offline and loaded from saved artefacts at
+runtime. The baseline classifier uses \code{bert-base-uncased} fine-tuned on the
+local GossipCop and PolitiFact fake/real split. Because this dataset is mostly
+headline-level, the classifier is used as a prior rather than as a direct
+fact-checking model.
+
+The semantic verifier is initialized from
+\code{MoritzLaurer/deberta-v3-base-mnli-fever-anli} and fine-tuned on the
+39K-sample factual-consistency NLI dataset in Table~\ref{tab:nli-data}. During
+training, evidence text is treated as the NLI premise and the claim-like
+sentence is treated as the hypothesis. At inference time, entailment maps to
+\code{supported}, contradiction maps to \code{refuted}, and neutral maps to
+\code{NEI}. The repository also contains a trained Flan-T5 claim extractor, but
+the deployed Streamlit workflow keeps it as an auxiliary module because direct
+sentence search gave more stable GNews retrieval.
+
+\subsection{Runtime Verification Pipeline}
+
+At runtime, the article is lightly cleaned before classification and retrieval:
 URLs and social-media artefacts are removed, whitespace is normalized, and the
 original wording is otherwise preserved. The cleaned article is passed to the
-fine-tuned \code{bert-base-uncased} classifier, whose output is treated as a
-prior rather than a hard truth label because the training data are mostly
-headline-level examples.
+baseline BERT classifier, which produces the article-level prior used later by
+the aggregator.
 
 The evidence path then splits the article into sentence-level search units. The
-codebase contains a trained Flan-T5 claim extractor, but the Streamlit
 application defaults to sentence splitting because aggressive claim rewriting
 can remove context and make GNews queries less reliable. Each sentence is
 sanitized into an API-safe query, submitted to GNews, and matched against
@@ -287,15 +312,14 @@ results using lexical overlap, entities, numbers, source relevance, and source
 credibility, so reputable outlets contribute more strongly than weak or noisy
 sources.
 
-The central semantic component is the fine-tuned DeBERTa-NLI verifier. It is
-initialized from \code{MoritzLaurer/deberta-v3-base-mnli-fever-anli} and
-fine-tuned on the 39K-sample factual-consistency NLI dataset in
-Table~\ref{tab:nli-data}. At runtime, the retrieved evidence is used as the
-premise and the article sentence is used as the hypothesis. Entailment becomes
-\code{supported}, contradiction becomes \code{refuted}, and neutral becomes
-\code{NEI}. Long evidence snippets are processed in chunks, and the system
-selects the strongest credibility-weighted NLI signal rather than averaging
-across irrelevant passages.
+The fine-tuned DeBERTa-NLI verifier then compares each sentence with its
+retrieved evidence. Long evidence snippets are processed in chunks, and the
+system selects the strongest credibility-weighted NLI signal rather than
+averaging across irrelevant passages. This design is more robust than simple
+keyword overlap because it can distinguish direct support, contradiction,
+partial topical relevance, and insufficient evidence.
+
+\subsection{Aggregation, Interfaces, and Testing Flow}
 
 The final verdict is produced by combining sentence-level verification labels
 with the BERT prior. Many supported sentences push the article toward
@@ -308,12 +332,22 @@ the Streamlit chat tab is a rule-based interface that calls existing pipeline
 functions and caches results. These modules improve interpretability and
 usability without changing the factual verdict.
 
+The implementation is tested at three levels. First, each trained model is
+evaluated against a held-out test split, which is reported in Section 4.
+Second, the retrieval and verification path is checked through an end-to-end
+demo article, including sentence units, evidence, NLI labels, and the final
+aggregated verdict. Third, the Streamlit interface is used to verify that the
+article-verification tab and chat tab expose the same cached pipeline result
+instead of producing inconsistent outputs.
+
+\subsection{Implementation Modules}
+
 The final implementation is organized around the modules in
 Table~\ref{tab:modules}. Runtime thresholds and scoring weights are centralized
 in \code{pyproject.toml} and can be overridden through environment variables,
 which makes the verification pipeline easier to tune without rewriting code.
 
-\begin{table}[htbp]
+\begin{table}[H]
     \centering
     \caption{Main implementation modules and configuration files}
     \label{tab:modules}
@@ -336,6 +370,8 @@ which makes the verification pipeline easier to tune without rewriting code.
 
 \section{Test Results}
 
+\subsection{Model Evaluation}
+
 The final implementation includes saved trained models and reported evaluation
 results, so this section focuses on the two learned components that drive the
 runtime system: the BERT baseline classifier and the DeBERTa-NLI verifier. The
@@ -347,7 +383,7 @@ class-imbalance weakness: 368 of 1,151 fake examples are misclassified as real.
 This reinforces the system design choice to treat BERT as a prior rather than
 as the sole truth-verification mechanism.
 
-\begin{table}[htbp]
+\begin{table}[H]
     \centering
     \caption{Confusion matrix for the BERT baseline classifier}
     \label{tab:bert-confusion}
@@ -370,19 +406,19 @@ and fake-news recall rises from 9.9\% to 68.0\%. The model is therefore strong
 enough to provide a prior, but not strong enough to replace evidence-based
 verification.
 
-\begin{table}[htbp]
+\begin{table}[H]
     \centering
     \caption{Baseline classifier comparison on the 4,640-sample held-out test set}
     \label{tab:bert-compare}
-    \begin{tabularx}{\textwidth}{@{}lYYYYY@{}}
+    \begin{tabular}{@{}lccccc@{}}
         \toprule
-        \textbf{Model} & \textbf{Accuracy} & \textbf{P (binary)} & \textbf{R (binary)} & \textbf{F1 (binary)} & \textbf{F1 (macro)} \\
+        \textbf{Model} & \textbf{Acc.} & \textbf{Prec.} & \textbf{Rec.} & \textbf{Binary F1} & \textbf{Macro F1} \\
         \midrule
         Majority baseline (always Real) & 0.7519 & 0.7519 & 1.0000 & 0.8584 & 0.4292 \\
         Original BERT (untrained head) & 0.7013 & 0.7517 & 0.9000 & 0.8192 & 0.4802 \\
         Fine-tuned BERT (3 epochs) & 0.8752 & 0.8991 & 0.9395 & 0.9189 & 0.8245 \\
         \bottomrule
-    \end{tabularx}
+    \end{tabular}
 \end{table}
 
 The final verifier was fine-tuned from
@@ -397,20 +433,20 @@ news evidence often contains partial overlap or incomplete context.
 Table~\ref{tab:nli-compare} shows that fine-tuning improves macro-F1 by 18.36
 percentage points over the original pretrained checkpoint.
 
-\begin{table}[htbp]
+\begin{table}[H]
     \centering
     \caption{Original versus fine-tuned NLI verifier on \code{real\_nli\_test.jsonl}}
     \label{tab:nli-compare}
-    \begin{tabularx}{\textwidth}{@{}lYYY@{}}
+    \begin{tabular}{@{}lccc@{}}
         \toprule
-        \textbf{Metric} & \textbf{Original DeBERTa-v3} & \textbf{Fine-tuned NLI} & \textbf{$\Delta$} \\
+        \textbf{Metric} & \textbf{Original} & \textbf{Fine-tuned} & \textbf{$\Delta$} \\
         \midrule
         Accuracy & 0.6816 & 0.8644 & +0.1829 \\
         Precision (macro) & 0.7200 & 0.8649 & +0.1450 \\
         Recall (macro) & 0.6816 & 0.8644 & +0.1829 \\
         F1 (macro) & 0.6807 & 0.8643 & +0.1836 \\
         \bottomrule
-    \end{tabularx}
+    \end{tabular}
 \end{table}
 
 The most operationally important NLI gain is contradiction recall, which rises
@@ -421,34 +457,86 @@ learned components, the pattern is consistent: pretrained language models
 provide useful initialization, but task-specific fine-tuning is what makes the
 system reliable enough for practical screening.
 
-A complete evaluation should also include one worked example showing how the
-system behaves on a real article. Because final screenshots and demo evidence
-will be added separately, Table~\ref{tab:case-study} is presented as an
-illustrative template for documenting sentence-level evidence, predicted labels,
-and the type of improvement expected from the NLI verifier.
+\FloatBarrier
 
-\begin{table}[htbp]
+\subsection{End-to-end Demo}
+
+A complete evaluation should also include one worked example showing how the
+system behaves on a real article. The demo run uses a Singapore news article
+about Parliament backing a motion on jobless growth amid the artificial
+intelligence transition. This example is useful because it contains multiple
+sentence-level factual statements, a clear external evidence source, and one
+case where the system returns \code{NEI} rather than forcing every sentence into
+a supported or refuted label.
+
+\begin{table}[H]
     \centering
-    \caption{Illustrative end-to-end case-study template}
+    \caption{End-to-end demo case study}
     \label{tab:case-study}
-    \begin{tabularx}{\textwidth}{@{}p{0.34\textwidth}p{0.16\textwidth}p{0.14\textwidth}Y@{}}
+    \small
+    \begin{tabularx}{\textwidth}{@{}p{0.38\textwidth}p{0.11\textwidth}p{0.10\textwidth}Y@{}}
         \toprule
-        \textbf{Sentence} & \textbf{Top Evidence} & \textbf{Target Label} & \textbf{Comment} \\
+        \textbf{Sentence} & \textbf{Evidence} & \textbf{Label} & \textbf{Comment} \\
         \midrule
-        Brockman disclosed financial ties and a nearly \$30B stake. & Reuters & Supported & Strong evidence match for the financial-interest statement. \\
-        Musk filed a lawsuit over the for-profit versus nonprofit issue. & Economic Times & Supported & Retrieved article directly addresses the litigation context. \\
-        Brockman's independence may be compromised by startup investments. & Rappler & Supported & Evidence is related and provides supporting discussion rather than exact lexical overlap. \\
-        Stakes in startups and Altman's family fund raise conflict-of-interest concerns. & Economic Times & Supported & Useful example of multi-entity matching across one sentence. \\
-        The trial and ChatGPT launch happened in 2022. & MarketScreener & NEI $\rightarrow$ Supported & Heuristic matching can overreact to unrelated numbers; NLI is intended to reduce this error. \\
+        Singapore Parliament passed a motion on jobless growth amid the AI transition. & CNA & Supported & Strong evidence match for the main parliamentary-motion statement. \\
+        AI adoption is not optional. & CNA & Supported & Retrieved evidence entails the quoted statement in the article. \\
+        Enterprises and workers need AI fluency to seize new opportunities. & CNA & Supported & Evidence supports the workforce-transition framing. \\
+        Singapore's approach should be fair and economic progress must be inclusive. & CNA & NEI & Retrieved evidence is related but not sufficient to clearly support or refute the full sentence. \\
+        The motion was moved by Ng Chee Meng with other named members. & CNA & Supported & Evidence supports the named-person and motion-context details. \\
         \bottomrule
     \end{tabularx}
 \end{table}
 
-This kind of case study is important because it demonstrates not only whether
-the final verdict is plausible, but also whether the evidence trail shown to the
-user is understandable and trustworthy. In particular, the NLI verifier is more
-reliable than simple overlap matching when numeric values or partially related
-phrases appear in the evidence but do not actually contradict the claim.
+Figure~\ref{fig:demo-verdict} shows the user-facing article verification page
+after the article is submitted. The final verdict is \code{Likely True} with
+80.44\% confidence. The explanation also shows that four key claims are
+supported, zero are refuted, and one is labelled \code{NEI}. This is the main
+business-facing output because it combines the article-level decision,
+sentence-level evidence summary, and sentiment interpretation in one view.
+
+\begin{figure}[p]
+    \centering
+    \includegraphics[width=\textwidth,height=0.78\textheight,keepaspectratio]{diagrams/demos/demo_1.png}
+    \caption{Demo output showing the final article verdict and media sentiment analysis.}
+    \label{fig:demo-verdict}
+\end{figure}
+
+Figure~\ref{fig:demo-sentence-evidence} shows the sentence-level verification
+view. The system lists the sentence search units, displays the GNews search
+queries, assigns NLI verification labels, and shows the best retrieved evidence
+source. This view is important because it turns the final verdict into an
+auditable evidence trail instead of leaving the user with only a black-box
+classification result.
+
+\begin{figure}[p]
+    \centering
+    \includegraphics[width=\textwidth,height=0.82\textheight,keepaspectratio]{diagrams/demos/demo_2.png}
+    \caption{Sentence-level verification results with generated search queries, NLI labels, and best retrieved evidence.}
+    \label{fig:demo-sentence-evidence}
+\end{figure}
+
+Figure~\ref{fig:demo-chat} shows the Streamlit chat interface. The chat page can
+load the same article, answer targeted commands such as \code{sentiment},
+\code{claims}, and \code{verify}, and reuse cached verification results. This
+demonstrates that the chat feature is an interaction layer over the same
+verification pipeline rather than a separate open-ended language model.
+
+\begin{figure}[p]
+    \centering
+    \includegraphics[width=\textwidth,height=0.82\textheight,keepaspectratio]{diagrams/demos/demo_3.png}
+    \caption{Chat interface demonstrating sentiment, claim listing, and verification commands over the loaded article.}
+    \label{fig:demo-chat}
+\end{figure}
+
+\FloatBarrier
+
+This case study is important because it demonstrates not only whether the final
+verdict is plausible, but also whether the evidence trail shown to the user is
+understandable and trustworthy. In particular, the NLI verifier is more useful
+than simple overlap matching when evidence is topically related but not strong
+enough to support the whole sentence.
+
+\subsection{Error Analysis}
 
 Even after the NLI upgrade, the system still has several realistic error
 sources. GNews may return related but insufficient evidence, returned snippets

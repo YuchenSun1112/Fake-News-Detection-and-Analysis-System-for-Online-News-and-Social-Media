@@ -5,11 +5,19 @@
 \contentsline {subsection}{\numberline {1.4}Scope}{2}{subsection.1.4}%
 \contentsline {section}{\numberline {2}Data and Evidence Resources}{2}{section.2}%
 \contentsline {section}{\numberline {3}System Design and Implementation}{3}{section.3}%
-\contentsline {section}{\numberline {4}Test Results}{4}{section.4}%
-\contentsline {section}{\numberline {5}Limitations and Future Work}{7}{section.5}%
-\contentsline {section}{\numberline {6}Conclusion}{7}{section.6}%
-\contentsline {section}{\numberline {7}References}{8}{section.7}%
-\contentsline {subsection}{\numberline {7.1}Libraries and Frameworks}{8}{subsection.7.1}%
-\contentsline {subsection}{\numberline {7.2}Models, APIs, and Data Sources}{8}{subsection.7.2}%
-\contentsline {section}{\numberline {8}Individual Contributions}{9}{section.8}%
-\contentsline {section}{\numberline {9}GenAI / LLM Declaration}{9}{section.9}%
+\contentsline {subsection}{\numberline {3.1}System Architecture}{3}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Training and Saved Model Artefacts}{4}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Runtime Verification Pipeline}{4}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}Aggregation, Interfaces, and Testing Flow}{5}{subsection.3.4}%
+\contentsline {subsection}{\numberline {3.5}Implementation Modules}{5}{subsection.3.5}%
+\contentsline {section}{\numberline {4}Test Results}{6}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Model Evaluation}{6}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}End-to-end Demo}{7}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Error Analysis}{12}{subsection.4.3}%
+\contentsline {section}{\numberline {5}Limitations and Future Work}{12}{section.5}%
+\contentsline {section}{\numberline {6}Conclusion}{12}{section.6}%
+\contentsline {section}{\numberline {7}References}{12}{section.7}%
+\contentsline {subsection}{\numberline {7.1}Libraries and Frameworks}{12}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}Models, APIs, and Data Sources}{13}{subsection.7.2}%
+\contentsline {section}{\numberline {8}Individual Contributions}{14}{section.8}%
+\contentsline {section}{\numberline {9}GenAI / LLM Declaration}{14}{section.9}%

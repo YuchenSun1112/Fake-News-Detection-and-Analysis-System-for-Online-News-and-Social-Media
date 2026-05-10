@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Homebrew) (preloaded format=pdflatex 2026.3.4)  10 MAY 2026 19:35
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Homebrew) (preloaded format=pdflatex 2026.3.4)  10 MAY 2026 20:32
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -155,6 +155,8 @@ Package: float 2001/11/08 v1.3d Float enhancements (AL)
 \float@box=\box54
 \@float@everytoks=\toks24
 \@floatcapt=\box55
+) (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/placeins/placeins.sty
+Package: placeins 2005/04/18  v 2.2
 ) (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/tools/tabularx.sty
 Package: tabularx 2023/12/11 v2.12a `tabularx' package (DPC)
  (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/tools/array.sty
@@ -306,7 +308,7 @@ Package uniquecounter Info: New unique counter `rerunfilecheck' on input line 28
 )
 \Hy@SectionHShift=\skip71
 )
-LaTeX Font Info:    Trying to load font information for T1+lmr on input line 54.
+LaTeX Font Info:    Trying to load font information for T1+lmr on input line 55.
  (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/lm/t1lmr.fd
 File: t1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 ) (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
@@ -315,24 +317,24 @@ File: l3backend-pdftex.def 2025-10-09 L3 backend support: PDF output (pdfTeX)
 ) (./report.aux)
 \openout1 = `report.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 54.
-LaTeX Font Info:    ... okay on input line 54.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 54.
-LaTeX Font Info:    ... okay on input line 54.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 54.
-LaTeX Font Info:    ... okay on input line 54.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 54.
-LaTeX Font Info:    ... okay on input line 54.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 54.
-LaTeX Font Info:    ... okay on input line 54.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 54.
-LaTeX Font Info:    ... okay on input line 54.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 54.
-LaTeX Font Info:    ... okay on input line 54.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 54.
-LaTeX Font Info:    ... okay on input line 54.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 54.
-LaTeX Font Info:    ... okay on input line 54.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 55.
+LaTeX Font Info:    ... okay on input line 55.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 55.
+LaTeX Font Info:    ... okay on input line 55.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 55.
+LaTeX Font Info:    ... okay on input line 55.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 55.
+LaTeX Font Info:    ... okay on input line 55.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 55.
+LaTeX Font Info:    ... okay on input line 55.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 55.
+LaTeX Font Info:    ... okay on input line 55.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 55.
+LaTeX Font Info:    ... okay on input line 55.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 55.
+LaTeX Font Info:    ... okay on input line 55.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 55.
+LaTeX Font Info:    ... okay on input line 55.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
@@ -368,13 +370,13 @@ LaTeX Font Info:    ... okay on input line 54.
 * \@reversemarginfalse
 * (1in=72.27pt=25.4mm, 1cm=28.453pt)
 
-LaTeX Info: Redefining \microtypecontext on input line 54.
-Package microtype Info: Applying patch `item' on input line 54.
-Package microtype Info: Applying patch `toc' on input line 54.
-Package microtype Info: Applying patch `eqnum' on input line 54.
-Package microtype Info: Applying patch `footnote' on input line 54.
-Package microtype Info: Applying patch `verbatim' on input line 54.
-LaTeX Info: Redefining \microtypesetup on input line 54.
+LaTeX Info: Redefining \microtypecontext on input line 55.
+Package microtype Info: Applying patch `item' on input line 55.
+Package microtype Info: Applying patch `toc' on input line 55.
+Package microtype Info: Applying patch `eqnum' on input line 55.
+Package microtype Info: Applying patch `footnote' on input line 55.
+Package microtype Info: Applying patch `verbatim' on input line 55.
+LaTeX Info: Redefining \microtypesetup on input line 55.
 Package microtype Info: Generating PDF output.
 Package microtype Info: Character protrusion enabled (level 2).
 Package microtype Info: Using default protrusion set `alltext'.
@@ -406,7 +408,7 @@ Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 48
  (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Live
 ))
-Package hyperref Info: Link coloring OFF on input line 54.
+Package hyperref Info: Link coloring OFF on input line 55.
  (./report.out) (./report.out)
 \@outlinefile=\write3
 \openout3 = `report.out'.
@@ -418,7 +420,7 @@ Package hyperref Info: Link coloring OFF on input line 54.
 \openout4 = `report.toc'.
 
  [2]
-LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 140.
+LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 141.
  (/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
@@ -427,55 +429,51 @@ Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
  [1] [2]
-<diagrams/system_structure/system_structure.png, id=102, 1888.05376pt x 793.96625pt>
+<diagrams/system_structure/system_structure.png, id=143, 1888.05376pt x 793.96625pt>
 File: diagrams/system_structure/system_structure.png Graphic file (type png)
 <use diagrams/system_structure/system_structure.png>
-Package pdftex.def Info: diagrams/system_structure/system_structure.png  used on input line 265.
-(pdftex.def)             Requested size: 469.75502pt x 197.534pt.
- [3{/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc}] [4 <./diagrams/system_structure/system_structure.png>] [5]
-Underfull \hbox (badness 7099) in paragraph at lines 444--444
-[]|\T1/lmr/bx/n/10.95 (+20) Target La-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 444--444
-[]|\T1/lmr/m/n/10.95 (+20) Economic
- []
-
-
-Underfull \hbox (badness 6348) in paragraph at lines 444--444
-[]|\T1/lmr/m/n/10.95 (+20) Stakes in star-tups and Alt-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 444--444
-[]|\T1/lmr/m/n/10.95 (+20) Economic
- []
-
-[6{/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc}] [7]
+Package pdftex.def Info: diagrams/system_structure/system_structure.png  used on input line 270.
+(pdftex.def)             Requested size: 469.73634pt x 197.534pt.
+ [3{/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc}] [4 <./diagrams/system_structure/system_structure.png>] [5] [6] [7{/opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc}]
+<diagrams/demos/demo_1.png, id=183, 1917.1625pt x 1458.44875pt>
+File: diagrams/demos/demo_1.png Graphic file (type png)
+<use diagrams/demos/demo_1.png>
+Package pdftex.def Info: diagrams/demos/demo_1.png  used on input line 499.
+(pdftex.def)             Requested size: 469.7528pt x 357.35646pt.
+<diagrams/demos/demo_2.png, id=185, 1917.1625pt x 4491.78125pt>
+File: diagrams/demos/demo_2.png Graphic file (type png)
+<use diagrams/demos/demo_2.png>
+Package pdftex.def Info: diagrams/demos/demo_2.png  used on input line 513.
+(pdftex.def)             Requested size: 227.62154pt x 533.30177pt.
+<diagrams/demos/demo_3.png, id=187, 1917.1625pt x 1890.06125pt>
+File: diagrams/demos/demo_3.png Graphic file (type png)
+<use diagrams/demos/demo_3.png>
+Package pdftex.def Info: diagrams/demos/demo_3.png  used on input line 526.
+(pdftex.def)             Requested size: 469.7528pt x 463.11232pt.
+ [8] [9 <./diagrams/demos/demo_1.png>] [10 <./diagrams/demos/demo_2.png>] [11 <./diagrams/demos/demo_3.png>] [12]
 LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <10.95> not available
-(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 541.
- [8] [9] (./report.aux)
+(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 629.
+ [13] [14] (./report.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
 Package rerunfilecheck Info: File `report.out' has not changed.
-(rerunfilecheck)             Checksum: B7E682B365CA5EA5FFEEE16161ED0D14;2323.
+(rerunfilecheck)             Checksum: 09C0263CD134995E6928F4FC10510F5F;3782.
  ) 
 Here is how much of TeX's memory you used:
- 12668 strings out of 467525
- 204586 string characters out of 5408440
- 669376 words of memory out of 5000000
- 41248 multiletter control sequences out of 15000+600000
- 670172 words of font info for 128 fonts, out of 8000000 for 9000
+ 12807 strings out of 467525
+ 207246 string characters out of 5408440
+ 664990 words of memory out of 5000000
+ 41335 multiletter control sequences out of 15000+600000
+ 687985 words of font info for 152 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,12n,79p,1131b,619s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,11n,79p,1131b,621s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/lm/lmr10.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/lm/lmr12.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/lm/lmsy10.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/lm/lmtk10.pfb></opt/homebrew/Cellar/texlive/20260301/share/texmf-dist/fonts/type1/public/lm/lmtt10.pfb>
-Output written on report.pdf (11 pages, 362580 bytes).
+Output written on report.pdf (16 pages, 4270271 bytes).
 PDF statistics:
- 251 PDF objects out of 1000 (max. 8388607)
- 218 compressed objects within 3 object streams
- 51 named destinations out of 1000 (max. 500000)
- 23678 words of extra memory for PDF output out of 24883 (max. 10000000)
+ 324 PDF objects out of 1000 (max. 8388607)
+ 283 compressed objects within 3 object streams
+ 67 named destinations out of 1000 (max. 500000)
+ 33997 words of extra memory for PDF output out of 35830 (max. 10000000)
 

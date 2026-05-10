@@ -13,25 +13,39 @@
 \@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Adapted factual-consistency NLI dataset used for verifier fine-tuning}}{3}{table.2}\protected@file@percent }
 \newlabel{tab:nli-data}{{2}{3}{Adapted factual-consistency NLI dataset used for verifier fine-tuning}{table.2}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {3}System Design and Implementation}{3}{section.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}System Architecture}{3}{subsection.3.1}\protected@file@percent }
 \@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces System structure and runtime workflow of the fact-based news verification system.}}{4}{figure.1}\protected@file@percent }
 \newlabel{fig:system-structure}{{1}{4}{System structure and runtime workflow of the fact-based news verification system}{figure.1}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4}Test Results}{4}{section.4}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Main implementation modules and configuration files}}{5}{table.3}\protected@file@percent }
-\newlabel{tab:modules}{{3}{5}{Main implementation modules and configuration files}{table.3}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Confusion matrix for the BERT baseline classifier}}{5}{table.4}\protected@file@percent }
-\newlabel{tab:bert-confusion}{{4}{5}{Confusion matrix for the BERT baseline classifier}{table.4}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Baseline classifier comparison on the 4,640-sample held-out test set}}{6}{table.5}\protected@file@percent }
-\newlabel{tab:bert-compare}{{5}{6}{Baseline classifier comparison on the 4,640-sample held-out test set}{table.5}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Original versus fine-tuned NLI verifier on \texttt  {real\_nli\_test.jsonl}}}{6}{table.6}\protected@file@percent }
-\newlabel{tab:nli-compare}{{6}{6}{Original versus fine-tuned NLI verifier on \code {real\_nli\_test.jsonl}}{table.6}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Illustrative end-to-end case-study template}}{7}{table.7}\protected@file@percent }
-\newlabel{tab:case-study}{{7}{7}{Illustrative end-to-end case-study template}{table.7}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {5}Limitations and Future Work}{7}{section.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {6}Conclusion}{7}{section.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {7}References}{8}{section.7}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.1}Libraries and Frameworks}{8}{subsection.7.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.2}Models, APIs, and Data Sources}{8}{subsection.7.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {8}Individual Contributions}{9}{section.8}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Planned contribution summary for the final report}}{9}{table.8}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {9}GenAI / LLM Declaration}{9}{section.9}\protected@file@percent }
-\gdef \@abspage@last{11}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Training and Saved Model Artefacts}{4}{subsection.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Runtime Verification Pipeline}{4}{subsection.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Aggregation, Interfaces, and Testing Flow}{5}{subsection.3.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Implementation Modules}{5}{subsection.3.5}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Main implementation modules and configuration files}}{6}{table.3}\protected@file@percent }
+\newlabel{tab:modules}{{3}{6}{Main implementation modules and configuration files}{table.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Test Results}{6}{section.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Model Evaluation}{6}{subsection.4.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Confusion matrix for the BERT baseline classifier}}{6}{table.4}\protected@file@percent }
+\newlabel{tab:bert-confusion}{{4}{6}{Confusion matrix for the BERT baseline classifier}{table.4}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Baseline classifier comparison on the 4,640-sample held-out test set}}{7}{table.5}\protected@file@percent }
+\newlabel{tab:bert-compare}{{5}{7}{Baseline classifier comparison on the 4,640-sample held-out test set}{table.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Original versus fine-tuned NLI verifier on \texttt  {real\_nli\_test.jsonl}}}{7}{table.6}\protected@file@percent }
+\newlabel{tab:nli-compare}{{6}{7}{Original versus fine-tuned NLI verifier on \code {real\_nli\_test.jsonl}}{table.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}End-to-end Demo}{7}{subsection.4.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces End-to-end demo case study}}{8}{table.7}\protected@file@percent }
+\newlabel{tab:case-study}{{7}{8}{End-to-end demo case study}{table.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Demo output showing the final article verdict and media sentiment analysis.}}{9}{figure.2}\protected@file@percent }
+\newlabel{fig:demo-verdict}{{2}{9}{Demo output showing the final article verdict and media sentiment analysis}{figure.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Sentence-level verification results with generated search queries, NLI labels, and best retrieved evidence.}}{10}{figure.3}\protected@file@percent }
+\newlabel{fig:demo-sentence-evidence}{{3}{10}{Sentence-level verification results with generated search queries, NLI labels, and best retrieved evidence}{figure.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Chat interface demonstrating sentiment, claim listing, and verification commands over the loaded article.}}{11}{figure.4}\protected@file@percent }
+\newlabel{fig:demo-chat}{{4}{11}{Chat interface demonstrating sentiment, claim listing, and verification commands over the loaded article}{figure.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Error Analysis}{12}{subsection.4.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5}Limitations and Future Work}{12}{section.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}Conclusion}{12}{section.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7}References}{12}{section.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1}Libraries and Frameworks}{12}{subsection.7.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2}Models, APIs, and Data Sources}{13}{subsection.7.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {8}Individual Contributions}{14}{section.8}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Planned contribution summary for the final report}}{14}{table.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {9}GenAI / LLM Declaration}{14}{section.9}\protected@file@percent }
+\gdef \@abspage@last{16}
