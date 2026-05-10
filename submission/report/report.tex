@@ -6,6 +6,8 @@
 \usepackage{lmodern}
 \usepackage{microtype}
 \usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{float}
 \usepackage{tabularx}
 \usepackage{array}
 \usepackage{enumitem}
@@ -53,11 +55,12 @@
 \pagenumbering{gobble}
 
 \begin{center}
+    \vspace*{2in}
     {\LARGE \textbf{Fact-based News Verification System}\par}
     \vspace{0.15em}
     {\Large A Hybrid System with BERT Classification, GNews Evidence Retrieval, and Fine-tuned NLI Verification\par}
 
-    \vspace{0.1in}
+    \vspace{1in}
 
     \begin{tabularx}{\textwidth}{@{}CCC@{}}
         \textbf{Name} & \textbf{Student ID} & \textbf{Email} \\
@@ -67,77 +70,125 @@
     \end{tabularx}
 \end{center}
 
+\vspace{1in}
+
 \noindent\textbf{Abstract}: This project develops a fact-based news verification system for online news articles. Instead of relying only on article-level fake/real classification, the system combines a fine-tuned BERT baseline classifier with sentence-level evidence retrieval and a fine-tuned DeBERTa-based Natural Language Inference verifier. The input article is cleaned and split into sentence-level verification units. Each sentence is used to retrieve external evidence from GNews, and the NLI model determines whether the evidence supports, refutes, or provides insufficient information for the sentence. The sentence-level results are aggregated into an article-level verdict. The system also includes sentiment analysis, LDA-based topic analysis, and a Streamlit chat interface to improve interpretability and user interaction.
 
 \smallskip
 \noindent\textbf{Keywords}: BERT Classification, GNews Retrieval, Natural Language Inference, Evidence Verification, Sentiment Analysis, Topic Modelling, Streamlit Chat
 
+
 \pagenumbering{roman}
+\newpage
 \tableofcontents
 \newpage
 \pagenumbering{arabic}
 
-\section{Business Problem}
+\section{Business Problem and Objectives}
 
-Online news spreads quickly, but ordinary readers rarely have time to check
-whether the factual statements in an article are actually supported by external
-evidence. This creates a practical verification problem rather than only a text
-classification problem. A news story may look professional, use neutral tone,
-and resemble real reporting style while still containing unsupported, outdated,
-or false factual statements.
+\subsection{Problem Context}
 
-This motivates a shift away from treating the task as simple fake/real
-classification. Three problems are especially important:
+Online news and social-media links move faster than manual verification
+workflows. A reader may encounter a politically sensitive story, a health claim,
+or a market-related rumour within minutes of publication, but checking whether
+the factual statements are supported by external reporting usually requires
+searching multiple sources, comparing wording, and deciding whether the evidence
+actually supports the claim. This creates a practical business problem: users
+need fast screening, but they also need a reason to trust the screening result.
 
-\begin{itemize}
-    \item article-level fake/real classifiers cannot explain which sentence or
-    claim is false;
-    \item style-based classifiers may learn topic bias, source bias, or writing
-    patterns instead of factual correctness;
-    \item real-world articles often mix true, false, and unverifiable
-    statements in the same document.
-\end{itemize}
+A conventional fake/real classifier only solves part of this problem. It can
+produce a quick label, but it normally cannot show which sentence is wrong, what
+external evidence was used, or whether the article contains a mixture of true,
+false, and unverifiable statements. Such classifiers can also learn topic,
+source, or writing-style patterns instead of factual correctness. This is
+especially risky in real news workflows, where an article can be written in a
+professional style while still including outdated numbers, missing context, or
+claims that are contradicted by newer reporting.
 
-The goal of this project is therefore to build an explainable first-pass
-verification tool that retrieves external evidence and verifies sentence-level
-factual statements. The system is designed to:
+\subsection{Business Value}
 
-\begin{itemize}
-    \item classify the overall article using a BERT baseline model;
-    \item split the article into sentence-level verification units;
-    \item retrieve external evidence from GNews for each sentence;
-    \item use a fine-tuned NLI model to classify evidence-sentence pairs as
-    supported, refuted, or not enough information (NEI);
-    \item aggregate sentence-level results into an article-level verdict;
-    \item provide sentiment, topic, and chat-based interaction features for
-    interpretability and usability.
-\end{itemize}
+The business value of the project is to reduce the effort required for first-pass
+news verification. Instead of asking a user to manually search every sentence,
+the system provides an initial article-level warning, retrieves external news
+evidence, and highlights which statements are supported, refuted, or not
+sufficiently evidenced. This makes the output more actionable than a single
+fake/real probability: the user can inspect the evidence trail, decide which
+sentences deserve attention, and use the result as a starting point for deeper
+human review.
 
-The intended users are students, researchers, journalists, and general readers
-who want a transparent way to inspect whether a news article is supported by
-other reporting. The system is not a replacement for professional fact-checking.
-Instead, it serves as an explainable verification assistant that combines fast
-screening with evidence-based semantic reasoning.
+The system is relevant to several user groups. General readers can use it to
+check suspicious articles before sharing them. Students and researchers can use
+it as an information-literacy tool that demonstrates the difference between
+style-based classification and evidence-based verification. Journalists,
+editors, and fact-checking teams can use it as a triage assistant that surfaces
+potentially unsupported statements before a human reviewer spends time on the
+full article. For these users, the value is not that the system replaces expert
+judgement; the value is that it makes verification faster, more transparent, and
+more reproducible.
 
-\section{Datasets Used}
+\subsection{Project Objectives}
 
-The final report narrative separates the data sources by their role in the
-pipeline rather than treating everything as one generic dataset. The system uses
-local fake/real datasets for baseline classification, a custom news NLI dataset
-for verifier fine-tuning, a small claim-extraction training set for an
-auxiliary extractor module, GNews as a live evidence source at inference time,
-and the fake/real datasets again for topic exploration.
+The main objective is to build an explainable news verification assistant that
+combines article-level screening with sentence-level evidence checking. Given a
+news article, the system should clean the text, estimate an initial BERT-based
+fake/real prior, split the article into verification units, retrieve external
+evidence from GNews, verify each sentence-evidence pair with a fine-tuned NLI
+model, and aggregate the sentence-level results into a final article-level
+verdict.
 
-\subsection{Baseline Fake/Real Classification Dataset}
+The second objective is interpretability. The system should not only output
+\code{Likely True}, \code{Likely False}, or \code{Unverified}; it should also
+show the retrieved evidence and the sentence-level labels that contributed to
+the verdict. This helps users understand why the model reached a decision and
+where uncertainty remains. Sentiment analysis, topic analysis, and the
+Streamlit chat interface are included for this reason: they make the system
+easier to inspect and discuss, but they do not replace the core
+evidence-verification pipeline.
 
-The local repository uses four FakeNewsNet-style CSV files for the baseline
-BERT classifier. These files mainly provide title-level text rather than full
-article bodies, so the baseline model should be described honestly as a title or
-headline classifier with limited article context.
+The third objective is practical deployability within the project scope. The
+system should run as an interactive Streamlit application, use saved model
+artefacts for repeatable inference, keep configuration values in one place, and
+separate the main runtime path from auxiliary modules such as claim extraction
+and topic exploration. This makes the implementation easier to demonstrate,
+evaluate, and extend.
+
+\subsection{Scope}
+
+The project focuses on English text-based news verification. In scope are
+article or headline-style inputs, BERT-based baseline classification,
+sentence-level GNews retrieval, evidence reranking, DeBERTa-NLI verification,
+article-level aggregation, sentiment display, topic exploration, and a
+rule-based chat interface over the verification workflow. The system is designed
+for first-pass screening and evidence inspection, not for issuing legally or
+journalistically final truth judgements.
+
+Several tasks are outside the current scope. The system does not verify images,
+videos, audio, or deepfakes. It does not perform full multi-hop investigation
+across long documents, and it does not guarantee that GNews contains the most
+complete or authoritative evidence for every claim. It also does not replace
+professional editorial review. These limits define the system's role: it is a
+transparent decision-support tool that helps users identify which statements are
+worth checking further.
+
+\section{Data and Evidence Resources}
+
+The project uses different data sources for different parts of the pipeline.
+Local fake/real news data support the baseline classifier and topic exploration,
+an adapted factual-consistency NLI dataset supports the verifier, a small
+claim-extraction dataset supports an auxiliary extractor, and GNews provides
+live evidence at inference time. This separation is important because the
+system is not trained on GNews results directly: the learned models are trained
+offline, while GNews supplies current external evidence during runtime.
+
+For the baseline classifier, the repository uses four FakeNewsNet-style CSV
+files. These records are mainly title-level rather than full article bodies, so
+the BERT classifier is best understood as a fast article-level prior instead of
+a complete factual verifier.
 
 \begin{table}[htbp]
     \centering
     \caption{Local fake/real datasets used for baseline classification}
+    \label{tab:baseline-data}
     \begin{tabularx}{\textwidth}{@{}lrrY@{}}
         \toprule
         \textbf{File} & \textbf{Rows} & \textbf{Label} & \textbf{Role} \\
@@ -152,30 +203,22 @@ headline classifier with limited article context.
     \end{tabularx}
 \end{table}
 
-These files are suitable for a baseline classifier because they provide labeled
-examples of fake and real news headlines. However, because they do not mainly
-contain full article bodies, they are insufficient for sentence-level factual
-verification on their own.
-
-The codebase also contains LIAR-style TSV loading support for
-\code{train.tsv}, \code{valid.tsv}, and \code{test.tsv}. However, the final
+The codebase also contains LIAR-style TSV loading support, but the final
 reported baseline model is the saved BERT classifier trained on the local
-GossipCop and PolitiFact split, because that is the stable pipeline used in the
-final implementation.
-
-\subsection{NLI Training Dataset}
-
-For the NLI verifier, the project uses a custom news-related NLI dataset stored
-under \code{data/nli\_dataset/}. It contains 39,000 balanced three-way samples:
-30,000 for training, 4,500 for validation, and 4,500 for testing. Each example
-pairs a news evidence passage with a claim-like hypothesis, which makes the data
-much closer to the deployed verification task than binary fake/real
-classification. The fine-tuning workflow is implemented in
-\code{scripts/train\_nli\_verifier.py}.
+GossipCop and PolitiFact split. For the verifier, the project uses an adapted
+factual-consistency NLI dataset stored under \code{data/nli\_dataset/}. The
+records are derived from VitaminC-style premise-hypothesis pairs and contain
+39,000 balanced three-way
+samples: 30,000 for training, 4,500 for validation, and 4,500 for testing. Each
+example pairs an evidence passage with a claim-like hypothesis, which makes the
+data closer to the deployed verification task than binary fake/real
+classification. The repository includes the final NLI dataset and saved
+fine-tuned verifier artefacts under \code{models/claim\_verifier/final/}.
 
 \begin{table}[htbp]
     \centering
-    \caption{Custom NLI dataset used for verifier fine-tuning}
+    \caption{Adapted factual-consistency NLI dataset used for verifier fine-tuning}
+    \label{tab:nli-data}
     \begin{tabularx}{\textwidth}{@{}lrrY@{}}
         \toprule
         \textbf{Split} & \textbf{Samples} & \textbf{Class Balance} & \textbf{Role} \\
@@ -184,79 +227,28 @@ classification. The fine-tuning workflow is implemented in
         \code{real\_nli\_valid.jsonl} & 4,500 & Balanced 3-way & Model selection and threshold tuning. \\
         \code{real\_nli\_test.jsonl} & 4,500 & Balanced 3-way & Final held-out evaluation. \\
         \midrule
-        \textbf{Total} & \textbf{39,000} & \textbf{13,000 per class} & Custom news NLI corpus for fact verification. \\
+        \textbf{Total} & \textbf{39,000} & \textbf{13,000 per class} & Balanced factual-consistency corpus for verifier fine-tuning. \\
         \bottomrule
     \end{tabularx}
 \end{table}
 
-\begin{table}[htbp]
-    \centering
-    \caption{Sample fields in the NLI dataset}
-    \begin{tabularx}{\textwidth}{@{}lY@{}}
-        \toprule
-        \textbf{Field} & \textbf{Meaning} \\
-        \midrule
-        \code{premise} & Evidence text or retrieved news passage. \\
-        \code{hypothesis} & Sentence or factual statement to be verified. \\
-        \code{label\_id} & NLI target: \code{0}=contradiction, \code{1}=neutral, \code{2}=entailment. \\
-        \bottomrule
-    \end{tabularx}
-\end{table}
+The NLI records use the standard premise-hypothesis format: \code{premise}
+stores the evidence passage, \code{hypothesis} stores the sentence or factual
+statement to verify, and \code{label\_id} maps contradiction, neutral, and
+entailment to refuted, NEI, and supported at inference time. The repository also
+contains \code{data/claim\_extraction\_dataset.json} for the auxiliary Flan-T5
+claim extractor, although the deployed application defaults to sentence
+splitting because preserving the original sentence wording produced more
+reliable GNews search queries. Finally, the same GossipCop and PolitiFact data
+are reused for LDA topic exploration, where labels are used for analysis rather
+than for the final verification decision.
 
-At inference time, these NLI outputs are mapped into verification labels as
-follows:
+\section{System Design and Implementation}
 
-\begin{itemize}
-    \item contradiction $\rightarrow$ \code{refuted};
-    \item neutral $\rightarrow$ \code{NEI};
-    \item entailment $\rightarrow$ \code{supported}.
-\end{itemize}
-
-This custom dataset is the key training resource for the fine-tuned verifier and
-must be documented explicitly, because it is one of the main differences between
-the final implementation and an earlier heuristic prototype.
-
-\subsection{Auxiliary Claim Extraction Dataset}
-
-The repository also includes a small custom training set for the claim
-extractor, stored as \code{data/claim\_extraction\_dataset.json}. This dataset is
-used to fine-tune a Flan-T5 sequence-to-sequence model that rewrites longer
-article text into claim-like verification units. The training workflow is
-implemented in \code{scripts/train\_claim\_extractor.py}.
-
-In the current application, however, sentence splitting is the default retrieval
-strategy because preserving the original sentence wording produced more reliable
-GNews results than aggressively compressed claims. The claim extractor remains a
-documented auxiliary component with two modes: a learned seq2seq extraction mode
-and a regex-based rule fallback.
-
-\subsection{Live Evidence Source}
-
-GNews is not treated as a training dataset. Instead, it is used as a live
-external evidence source at inference time. For each sentence-level verification
-unit, the system queries GNews and collects returned article metadata such as
-title, description, content snippet, source, publication date, and URL.
-
-This distinction matters for the report narrative: the baseline classifier and
-NLI verifier are trained offline, while GNews provides current evidence during
-runtime. The retrieval step therefore connects the static models with up-to-date
-news reporting.
-
-\subsection{Topic Analysis Dataset}
-
-The same local GossipCop and PolitiFact data are also used for topic analysis.
-In this module, the labels are not used for verification decisions. Instead, the
-documents are vectorized to explore recurring themes, topic-word distributions,
-fake/real topic patterns, and article-topic assignments in the training corpus.
-
-\section{Solution Approach}
-
-The final system should be described as an evidence-based news verification
-pipeline rather than as a simple fake-news classifier. The baseline BERT model
-remains important, but it now serves as an article-level prior alongside a
-sentence-level retrieval and NLI verification pipeline.
-
-\subsection{System Overview}
+The final system is an evidence-based verification pipeline rather than a
+simple fake-news classifier. The BERT classifier remains useful, but it serves
+as an article-level prior alongside sentence-level retrieval and NLI
+verification.
 
 The end-to-end flow of the system is shown below:
 
@@ -268,177 +260,70 @@ $\rightarrow$ Fine-tuned DeBERTa-NLI Verifier $\rightarrow$ Article-level Aggreg
 $\rightarrow$ Final Verdict + Evidence + Sentiment + Topic + Chat
 \end{quote}
 
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{diagrams/system_structure/system_structure.png}
+    \caption{System structure and runtime workflow of the fact-based news verification system.}
+    \label{fig:system-structure}
+\end{figure}
+
 This architecture balances speed and interpretability. The BERT classifier gives
 an immediate article-level signal, while the retrieval and NLI stages explain
 which specific factual statements are supported, contradicted, or still
-unverified.
+unverified. Before classification and retrieval, the article is lightly cleaned:
+URLs and social-media artefacts are removed, whitespace is normalized, and the
+original wording is otherwise preserved. The cleaned article is passed to the
+fine-tuned \code{bert-base-uncased} classifier, whose output is treated as a
+prior rather than a hard truth label because the training data are mostly
+headline-level examples.
 
-The implementation also includes saved model artefacts for the main learned
-components:
+The evidence path then splits the article into sentence-level search units. The
+codebase contains a trained Flan-T5 claim extractor, but the Streamlit
+application defaults to sentence splitting because aggressive claim rewriting
+can remove context and make GNews queries less reliable. Each sentence is
+sanitized into an API-safe query, submitted to GNews, and matched against
+returned titles, descriptions, and content snippets. The retriever reranks
+results using lexical overlap, entities, numbers, source relevance, and source
+credibility, so reputable outlets contribute more strongly than weak or noisy
+sources.
 
-\begin{itemize}
-    \item \code{models/baseline\_classifier/final/} for the baseline BERT classifier;
-    \item \code{models/claim\_verifier/final/} and intermediate checkpoints under
-    \code{models/claim\_verifier/};
-    \item \code{models/claim\_extractor/final/} for the trained Flan-T5 claim extractor.
-\end{itemize}
+The central semantic component is the fine-tuned DeBERTa-NLI verifier. It is
+initialized from \code{MoritzLaurer/deberta-v3-base-mnli-fever-anli} and
+fine-tuned on the 39K-sample factual-consistency NLI dataset in
+Table~\ref{tab:nli-data}. At runtime, the retrieved evidence is used as the
+premise and the article sentence is used as the hypothesis. Entailment becomes
+\code{supported}, contradiction becomes \code{refuted}, and neutral becomes
+\code{NEI}. Long evidence snippets are processed in chunks, and the system
+selects the strongest credibility-weighted NLI signal rather than averaging
+across irrelevant passages.
 
-\subsection{Text Cleaning}
+The final verdict is produced by combining sentence-level verification labels
+with the BERT prior. Many supported sentences push the article toward
+\code{Likely True}; many refuted sentences push it toward \code{Likely False};
+weak evidence or mostly neutral results lead to \code{Unverified}. Sentiment,
+topic analysis, and chat interaction are kept outside the core truth decision.
+Sentiment uses \code{cardiffnlp/twitter-roberta-base-sentiment-latest} with
+VADER and keyword fallbacks, topic analysis uses LDA with optional BERTopic, and
+the Streamlit chat tab is a rule-based interface that calls existing pipeline
+functions and caches results. These modules improve interpretability and
+usability without changing the factual verdict.
 
-Before classification and retrieval, the input article is normalized to reduce
-noise. The cleaning stage removes URLs, strips social-media artefacts, and
-normalizes whitespace and punctuation. This improves consistency for both the
-baseline classifier and the retrieval module.
-
-The cleaning step is deliberately lightweight. Its goal is not to rewrite the
-article, but to preserve the original wording as much as possible while making
-the input safe and stable for downstream processing.
-
-\subsection{BERT Baseline Classifier}
-
-The baseline model uses \code{bert-base-uncased} fine-tuned for binary fake/real
-classification. Because the available local data are mainly title-level records,
-the classifier should be presented as a fast article-level prior rather than as
-a complete factual verifier.
-
-This distinction is important for the report. The BERT classifier does not
-determine whether the article is true or false in a strict fact-checking sense.
-Instead, it estimates whether the article resembles fake or real examples in the
-training data. Its output is later combined with evidence-based verification
-signals rather than used as the only decision criterion.
-
-\subsection{Sentence-level GNews Evidence Retrieval}
-
-The codebase contains both a trained claim extractor and a simpler sentence
-splitter. In practice, the current Streamlit application defaults to sentence
-splitting through retrieval-unit segmentation, because earlier experiments with
-aggressive claim simplification often reduced search quality. Important context
-was sometimes lost, making the query too vague or too distorted for reliable
-news search.
-
-Each sentence is preserved as much as possible and submitted to GNews after
-query-safe sanitization. The retrieval logic focuses on:
-
-\begin{itemize}
-    \item punctuation removal and cleanup that do not change the core wording;
-    \item query length control for API-safe search strings;
-    \item preserving original word order whenever possible;
-    \item searching over returned title, description, and content fields;
-    \item reranking evidence based on lexical overlap, entities, numbers, and
-    source relevance;
-    \item source credibility scoring, where manually rated outlets are grouped
-    into tiers and integrated into the ranking formula.
-\end{itemize}
-
-This design improves explainability because the system can show users exactly
-which sentence triggered which retrieval query and which evidence was selected
-for verification. It also reflects a practical design decision: the retriever
-does not trust all sources equally, so wire services and highly reputable news
-organizations contribute more strongly to the final evidence score than weak or
-noisy outlets.
-
-\subsection{Fine-tuned DeBERTa-NLI Verification}
-
-The central upgrade in the final system is the move from a development-stage
-heuristic overlap matcher to a fine-tuned Natural Language Inference verifier.
-The deployed verifier is initialized from
-\code{MoritzLaurer/deberta-v3-base-mnli-fever-anli} and then fine-tuned on the
-custom 39K-sample news NLI dataset described in Section 2.2. The NLI model
-receives the retrieved evidence as the premise and the article sentence as the
-hypothesis:
-
-\begin{itemize}
-    \item \textbf{Premise}: retrieved evidence snippet;
-    \item \textbf{Hypothesis}: sentence from the input article.
-\end{itemize}
-
-The NLI output is mapped into verification labels as follows:
-
-\begin{itemize}
-    \item entailment $\rightarrow$ supported;
-    \item contradiction $\rightarrow$ refuted;
-    \item neutral $\rightarrow$ NEI.
-\end{itemize}
-
-Long retrieved evidence is processed in chunks rather than as one
-undifferentiated block. Each claim-evidence chunk is scored separately, echo or
-parroting effects are discounted, and the strongest NLI signal is selected
-instead of averaging across irrelevant passages. This design is more robust than
-heuristic token matching because it models contradiction, paraphrase, and
-relevance at the sentence-pair level while reducing factual dilution from noisy
-snippets.
-
-\subsection{Article-level Aggregation}
-
-The system aggregates sentence-level verification outputs into a final
-article-level verdict. A practical aggregation rule is:
-
-\begin{itemize}
-    \item many supported sentences $\rightarrow$ \code{Likely True};
-    \item many refuted sentences $\rightarrow$ \code{Likely False};
-    \item mostly NEI results or weak evidence $\rightarrow$ \code{Unverified}.
-\end{itemize}
-
-The BERT baseline is used as an additional article-level signal rather than as a
-hard override. This hybrid design allows the final verdict to reflect both the
-training-data prior and the retrieved evidence trail.
-
-\subsection{Sentiment Analysis}
-
-Sentiment analysis is included as an interpretability feature rather than a
-truth-verification signal. The primary model is
-\code{cardiffnlp/twitter-roberta-base-sentiment-latest}. If that model is not
-available, the pipeline falls back first to NLTK VADER and then to a simple
-keyword-based scorer. The output labels are positive, neutral, and negative.
-
-This module helps users understand the tone of the submitted article or the tone
-of retrieved reporting. However, sentiment does not determine whether a story is
-true or false. A false article can sound neutral, and a true article can be
-emotionally framed, so sentiment is used only to improve interpretability.
-
-\subsection{LDA Topic Analysis}
-
-The topic analysis component uses \code{CountVectorizer} and Latent Dirichlet
-Allocation (LDA) as the always-available topic model, with optional BERTopic
-support when the required dependencies are available. The topic page can show
-top words per topic, sample documents, document-topic probabilities, article
-topic inference, heatmaps, and fake/real distributions by topic.
-
-This analysis is useful for exploratory understanding of the dataset and for
-showing how different topics appear in fake and real subsets. It is not part of
-the final truth-verification decision and should be described as an
-interpretability and exploratory-analysis feature.
-
-\subsection{Chat Interface}
-
-The Streamlit chat tab provides a conversational interface over the system's
-functions. Through chat-style prompts, the user can load an article, trigger
-verification, inspect sentence-level search units, view sentiment output,
-obtain short article previews, and ask keyword-triggered follow-up questions.
-
-To keep the report accurate, the chat interface should be described honestly as
-a rule-based interaction layer built with Streamlit chat components. It maps
-user keywords or menu choices to existing verification functions, and it caches
-pipeline results so that repeated interactions do not recompute the full
-workflow unnecessarily. It is not an open-ended large-language-model chatbot.
-
-\subsection{Implementation Modules and Configuration}
-
-The final system includes several modules beyond the core BERT and NLI models.
-Many runtime thresholds and scoring weights are centralized in
-\code{pyproject.toml} and can also be overridden through environment variables,
+The final implementation is organized around the modules in
+Table~\ref{tab:modules}. Runtime thresholds and scoring weights are centralized
+in \code{pyproject.toml} and can be overridden through environment variables,
 which makes the verification pipeline easier to tune without rewriting code.
 
 \begin{table}[htbp]
     \centering
     \caption{Main implementation modules and configuration files}
+    \label{tab:modules}
     \begin{tabularx}{\textwidth}{@{}p{0.34\textwidth}Y@{}}
         \toprule
         \textbf{Module or File} & \textbf{Responsibility} \\
         \midrule
         \code{app.py} & Streamlit interface, multi-tab workflow, chat interaction, and cached end-to-end orchestration. \\
         \code{src/retriever.py} & GNews querying, retrieval-unit search, source credibility scoring, deduplication, and evidence reranking. \\
-        \code{src/verifier.py} & Fine-tuned DeBERTa NLI verification with chunked evidence processing, echo discounting, and strongest-signal selection. \\
+        \code{src/verifier.py} & Fine-tuned DeBERTa NLI verification with chunked evidence processing, credibility weighting, and strongest-signal selection. \\
         \code{src/claim\_extractor.py} & Flan-T5 claim extraction with a rule-based fallback; retained as an auxiliary module. \\
         \code{src/sentiment\_analyser.py} & Media-tone analysis using RoBERTa sentiment with VADER and keyword fallbacks. \\
         \code{src/topic\_analysis\_page.py} & LDA topic exploration, optional BERTopic integration, dataset explorer, and article-topic inference. \\
@@ -451,21 +336,21 @@ which makes the verification pipeline easier to tune without rewriting code.
 
 \section{Test Results}
 
-The final implementation includes saved trained models and recorded evaluation
-results, so this section reports actual numbers rather than placeholder tables.
-The trained artefacts are saved under the baseline classifier, claim verifier,
-and claim extractor model directories described in Section 3.10.
-
-\subsection{BERT Baseline Evaluation}
-
-The baseline BERT classifier was evaluated on a 20\% held-out test split with
-4,640 samples. The results confirm that the baseline model is a strong
-article-level screening signal, but they also reveal the expected
-class-imbalance effect between fake and real news.
+The final implementation includes saved trained models and reported evaluation
+results, so this section focuses on the two learned components that drive the
+runtime system: the BERT baseline classifier and the DeBERTa-NLI verifier. The
+baseline BERT classifier was evaluated on a 20\% held-out split with 4,640
+samples. It achieves accuracy 0.8752, binary F1 0.9189, and macro-F1 0.8245.
+The confusion matrix in Table~\ref{tab:bert-confusion} shows that the model is
+a useful article-level screening signal, but it also confirms the expected
+class-imbalance weakness: 368 of 1,151 fake examples are misclassified as real.
+This reinforces the system design choice to treat BERT as a prior rather than
+as the sole truth-verification mechanism.
 
 \begin{table}[htbp]
     \centering
     \caption{Confusion matrix for the BERT baseline classifier}
+    \label{tab:bert-confusion}
     \begin{tabular}{@{}lcc@{}}
         \toprule
         \textbf{Actual / Predicted} & \textbf{Pred Fake} & \textbf{Pred Real} \\
@@ -476,20 +361,14 @@ class-imbalance effect between fake and real news.
     \end{tabular}
 \end{table}
 
-The fine-tuned BERT baseline achieves accuracy 0.8752, binary F1 0.9189, and
-macro-F1 0.8245 on the held-out split. At the class level, fake-news precision,
-recall, and F1 are 0.7877, 0.6803, and 0.7301 respectively, while the
-corresponding real-news values are 0.8991, 0.9395, and 0.9189. These numbers
-show clear class-imbalance effects: approximately 32\% of fake news in the test
-split is misclassified as real. This is consistent with the roughly 3:1
-real-to-fake ratio in the training data and reinforces the decision to treat
-the BERT model as a prior rather than as the sole truth-verification mechanism.
-
-To make the effect of fine-tuning explicit, Table~\ref{tab:bert-compare}
-compares the final fine-tuned classifier with two weaker baselines: a majority
-classifier that always predicts \code{Real}, and the original
-\code{bert-base-uncased} model with an untrained randomly initialized
-classification head.
+The benefit of fine-tuning is clearer when the final BERT model is compared
+with weaker baselines. As shown in Table~\ref{tab:bert-compare}, the majority
+classifier obtains a deceptively high binary F1 because the dataset contains
+many more real than fake examples. Macro-F1 gives the more reliable view:
+fine-tuning raises macro-F1 from 0.4802 for the untrained BERT head to 0.8245,
+and fake-news recall rises from 9.9\% to 68.0\%. The model is therefore strong
+enough to provide a prior, but not strong enough to replace evidence-based
+verification.
 
 \begin{table}[htbp]
     \centering
@@ -506,37 +385,17 @@ classification head.
     \end{tabularx}
 \end{table}
 
-The macro-F1 tells the real story. Because the dataset is imbalanced, the
-binary F1 for the majority baseline still looks deceptively high. In contrast,
-macro-F1 shows that the untrained BERT is only slightly better than a trivial
-majority-class predictor, whereas fine-tuning raises macro-F1 from 0.4802 to
-0.8245, an improvement of 0.3442. Compared with the majority baseline, the
-macro-F1 gain is even larger at 0.3953. The most important change is in
-fake-news recall: the untrained BERT detects only 9.9\% of fake items, while
-the fine-tuned model raises fake recall to 68.0\%. This makes the difference
-between a model that mostly follows the majority class and one that can detect a
-substantial share of suspicious articles.
-
-\subsection{NLI Verifier Evaluation}
-
 The final verifier was fine-tuned from
-\code{MoritzLaurer/deberta-v3-base-mnli-fever-anli} on the custom balanced news
-NLI dataset described in Section 2.2. Evaluation was performed on a held-out
-test set of 4,500 samples. Earlier heuristic matching logic was useful during
-prototype development, but the final deployed verifier is the fine-tuned NLI
-model reported below. On this test set, the fine-tuned verifier reaches
-accuracy 0.8644, macro precision 0.8649, macro recall 0.8644, and macro-F1
-0.8643. At the class level, contradiction, neutral, and entailment F1 are
-0.8446, 0.8410, and 0.9072 respectively. These results show that entailment is
-the strongest class, while contradiction and neutral remain slightly harder.
-This is expected in news verification because retrieved evidence often contains
-partial overlap or incomplete context. Even so, the macro F1 of 0.8643
-indicates that the verifier is robust enough to serve as the semantic core of
-the final system.
-
-Table~\ref{tab:nli-compare} shows the effect of domain-specific fine-tuning more
-directly by comparing the original pretrained NLI checkpoint with the final
-news-tuned verifier on the same balanced 4,500-sample test set.
+\code{MoritzLaurer/deberta-v3-base-mnli-fever-anli} on the balanced
+factual-consistency NLI dataset in Table~\ref{tab:nli-data}. Evaluation was
+performed on the 4,500-sample held-out test set. Earlier heuristic matching
+logic was useful during prototype development, but the deployed verifier is the
+fine-tuned NLI model reported here. It reaches accuracy 0.8644, macro precision
+0.8649, macro recall 0.8644, and macro-F1 0.8643. Entailment is the strongest
+class, while contradiction and neutral remain slightly harder because retrieved
+news evidence often contains partial overlap or incomplete context.
+Table~\ref{tab:nli-compare} shows that fine-tuning improves macro-F1 by 18.36
+percentage points over the original pretrained checkpoint.
 
 \begin{table}[htbp]
     \centering
@@ -544,7 +403,7 @@ news-tuned verifier on the same balanced 4,500-sample test set.
     \label{tab:nli-compare}
     \begin{tabularx}{\textwidth}{@{}lYYY@{}}
         \toprule
-        \textbf{Metric} & \textbf{Original DeBERTa-v3} & \textbf{Fine-tuned (News NLI)} & \textbf{$\Delta$ Delta} \\
+        \textbf{Metric} & \textbf{Original DeBERTa-v3} & \textbf{Fine-tuned NLI} & \textbf{$\Delta$} \\
         \midrule
         Accuracy & 0.6816 & 0.8644 & +0.1829 \\
         Precision (macro) & 0.7200 & 0.8649 & +0.1450 \\
@@ -554,53 +413,23 @@ news-tuned verifier on the same balanced 4,500-sample test set.
     \end{tabularx}
 \end{table}
 
-\begin{table}[htbp]
-    \centering
-    \caption{Per-class F1 improvement after news-specific NLI fine-tuning}
-    \begin{tabularx}{0.88\textwidth}{@{}lYYY@{}}
-        \toprule
-        \textbf{Class} & \textbf{Original} & \textbf{Fine-tuned} & \textbf{$\Delta$ Delta} \\
-        \midrule
-        Contradiction & 0.6474 & 0.8446 & +0.1972 \\
-        Neutral & 0.6641 & 0.8410 & +0.1769 \\
-        Entailment & 0.7307 & 0.9072 & +0.1765 \\
-        \bottomrule
-    \end{tabularx}
-\end{table}
-
-The fine-tuning improvement is substantial: macro-F1 increases by 18.36
-percentage points. The most critical gain is contradiction recall, which rises
-from 52.13\% to 81.87\%. This matters operationally because missed
-contradictions would cause the fact-checker to overlook refuting evidence and
-produce overly optimistic support labels. The original checkpoint also shows
-strong neutral-to-entailment confusion, especially on evidence with topical but
-not fully supportive overlap. In the original model, contradiction recall is
-only 0.5213 and contradiction F1 is 0.6474, while neutral precision is only
-0.5673. Fine-tuning on 30,000 news-specific NLI pairs substantially reduces
-those weaknesses and improves all three classes consistently.
-
-\subsection{Model Comparison Summary}
-
-Across both learned components, the results show that domain-specific
-fine-tuning consistently improves performance over generic pretrained baselines.
-For the NLI verifier, macro-F1 improves by 18.4 percentage points after
-news-specific training. For the baseline fake/real classifier, macro-F1 improves
-by 34.4 percentage points over the untrained BERT head. This comparison
-supports the main design choice of the project: pretrained language models
-provide a strong initialization, but task-specific fine-tuning on
-domain-relevant news data is what makes the system reliable enough for practical
-evidence-based verification.
-
-\subsection{End-to-end Verification Case Study}
+The most operationally important NLI gain is contradiction recall, which rises
+from 52.13\% to 81.87\%. Missed contradictions would cause the system to
+overlook refuting evidence and produce overly optimistic support labels, so this
+improvement directly supports the evidence-verification goal. Across the two
+learned components, the pattern is consistent: pretrained language models
+provide useful initialization, but task-specific fine-tuning is what makes the
+system reliable enough for practical screening.
 
 A complete evaluation should also include one worked example showing how the
-system behaves on a real article. Table~\ref{tab:case-study} gives a suitable
-format for documenting sentence-level evidence, predicted labels, and the type
-of improvement expected from the NLI verifier.
+system behaves on a real article. Because final screenshots and demo evidence
+will be added separately, Table~\ref{tab:case-study} is presented as an
+illustrative template for documenting sentence-level evidence, predicted labels,
+and the type of improvement expected from the NLI verifier.
 
 \begin{table}[htbp]
     \centering
-    \caption{Representative end-to-end case-study structure}
+    \caption{Illustrative end-to-end case-study template}
     \label{tab:case-study}
     \begin{tabularx}{\textwidth}{@{}p{0.34\textwidth}p{0.16\textwidth}p{0.14\textwidth}Y@{}}
         \toprule
@@ -621,21 +450,12 @@ user is understandable and trustworthy. In particular, the NLI verifier is more
 reliable than simple overlap matching when numeric values or partially related
 phrases appear in the evidence but do not actually contradict the claim.
 
-\subsection{Error Analysis and Discussion}
-
-Even after the NLI upgrade, several error sources remain important:
-
-\begin{itemize}
-    \item \textbf{Retrieval errors}: GNews may return related but still insufficient evidence.
-    \item \textbf{Snippet limitation}: the returned content can be truncated, which weakens premise quality for NLI.
-    \item \textbf{NLI ambiguity}: long or multi-fact sentences can confuse the verifier because one sentence may contain both supported and unsupported subclaims.
-    \item \textbf{Label-mapping noise}: stance datasets do not perfectly match factual entailment labels.
-    \item \textbf{Aggregation sensitivity}: a single wrongly refuted sentence may affect the article-level verdict disproportionately.
-\end{itemize}
-
-Including this discussion makes the report more realistic and shows that the
-team understands the limitations of evidence-based verification in practical
-deployment settings.
+Even after the NLI upgrade, the system still has several realistic error
+sources. GNews may return related but insufficient evidence, returned snippets
+can be truncated, long sentences may contain multiple subclaims, and a single
+wrongly refuted sentence can disproportionately influence the article-level
+aggregation. These limitations are expected in practical evidence-based
+verification and are addressed further in the next section.
 
 \section{Limitations and Future Work}
 
@@ -647,8 +467,8 @@ are title-heavy, so they are better suited to screening than to deep factual
 reasoning.
 
 Future work should focus on four areas. First, the team should expand the NLI
-training set with more news-specific claim-evidence pairs and a cleaner manual
-validation split. Second, the retrieval stage can be improved with better
+training set with manually validated news claim-evidence pairs and a cleaner
+manual validation split. Second, the retrieval stage can be improved with better
 sentence selection, reranking, and source filtering. Third, the aggregation rule
 can be calibrated with confidence weighting rather than simple counting. Fourth,
 the system can be extended to support multi-hop evidence and longer article-body
@@ -733,7 +553,7 @@ article-level style classification.
     \item \textbf{News-related NLI or stance-verification data}. Used to build
     claim-evidence-label training pairs for the verifier. One public reference
     is the Fake News Challenge Stage 1 dataset:
-    \href{https://github.com/FakeNewsChallenge/fnc-1}{FNC-1 repository}. The report should note that stance labels require mapping and manual inspection before use as NLI labels.
+    \href{https://github.com/FakeNewsChallenge/fnc-1}{FNC-1 repository}. Stance labels require mapping and manual inspection before they can be used as NLI-style labels.
 
     \item \textbf{GNews API}. Live evidence source used at inference time for
     sentence-level retrieval. Official documentation:
@@ -755,7 +575,7 @@ article-level style classification.
 
 \section{Individual Contributions}
 
-\begin{table}[htbp]
+\begin{table}[H]
     \centering
     \caption{Planned contribution summary for the final report}
     \begin{tabularx}{\textwidth}{@{}p{0.24\textwidth}p{0.28\textwidth}Y@{}}

@@ -2,27 +2,36 @@
 \providecommand\hyper@newdestlabel[2]{}
 \providecommand\HyField@AuxAddToFields[1]{}
 \providecommand\HyField@AuxAddToCoFields[2]{}
-\@writefile{toc}{\contentsline {section}{\numberline {1}The Business Problem}{1}{section.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {2}The Datasets Used}{1}{section.2}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Local datasets used by the baseline classifier}}{1}{table.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Dataset Plan Compared with Final Implementation}{2}{subsection.2.1}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Dataset and evidence-source evolution}}{2}{table.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {3}The Solution Approaches}{2}{section.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Design Evolution from the Proposal}{2}{subsection.3.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Baseline Fake/Real Classification}{2}{subsection.3.2}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Original proposal versus revised solution}}{3}{table.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Evidence-based Claim Verification}{3}{subsection.3.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}User Interface}{3}{subsection.3.4}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Main implementation modules}}{4}{table.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {4}Test Results Demonstrating System Performance}{4}{section.4}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Current test evidence available in the repository}}{4}{table.5}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Baseline classifier result table to fill after training}}{4}{table.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Evaluation Implications of the Revised Design}{5}{subsection.4.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {5}Conclusions}{5}{section.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {6}References to Public Libraries, Models, and Source Code}{5}{section.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}Public Libraries Used in the Implementation}{5}{subsection.6.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Models, APIs, and Dataset Resources}{6}{subsection.6.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.3}Project Source Code Organization}{6}{subsection.6.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {7}Individual Contribution of Each Team Member}{7}{section.7}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Team contribution summary}}{7}{table.7}\protected@file@percent }
-\gdef \@abspage@last{8}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Business Problem and Objectives}{1}{section.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.1}Problem Context}{1}{subsection.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.2}Business Value}{1}{subsection.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.3}Project Objectives}{1}{subsection.1.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.4}Scope}{2}{subsection.1.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2}Data and Evidence Resources}{2}{section.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Local fake/real datasets used for baseline classification}}{2}{table.1}\protected@file@percent }
+\newlabel{tab:baseline-data}{{1}{2}{Local fake/real datasets used for baseline classification}{table.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Adapted factual-consistency NLI dataset used for verifier fine-tuning}}{3}{table.2}\protected@file@percent }
+\newlabel{tab:nli-data}{{2}{3}{Adapted factual-consistency NLI dataset used for verifier fine-tuning}{table.2}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3}System Design and Implementation}{3}{section.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces System structure and runtime workflow of the fact-based news verification system.}}{4}{figure.1}\protected@file@percent }
+\newlabel{fig:system-structure}{{1}{4}{System structure and runtime workflow of the fact-based news verification system}{figure.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Test Results}{4}{section.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Main implementation modules and configuration files}}{5}{table.3}\protected@file@percent }
+\newlabel{tab:modules}{{3}{5}{Main implementation modules and configuration files}{table.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Confusion matrix for the BERT baseline classifier}}{5}{table.4}\protected@file@percent }
+\newlabel{tab:bert-confusion}{{4}{5}{Confusion matrix for the BERT baseline classifier}{table.4}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Baseline classifier comparison on the 4,640-sample held-out test set}}{6}{table.5}\protected@file@percent }
+\newlabel{tab:bert-compare}{{5}{6}{Baseline classifier comparison on the 4,640-sample held-out test set}{table.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Original versus fine-tuned NLI verifier on \texttt  {real\_nli\_test.jsonl}}}{6}{table.6}\protected@file@percent }
+\newlabel{tab:nli-compare}{{6}{6}{Original versus fine-tuned NLI verifier on \code {real\_nli\_test.jsonl}}{table.6}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Illustrative end-to-end case-study template}}{7}{table.7}\protected@file@percent }
+\newlabel{tab:case-study}{{7}{7}{Illustrative end-to-end case-study template}{table.7}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Limitations and Future Work}{7}{section.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}Conclusion}{7}{section.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7}References}{8}{section.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1}Libraries and Frameworks}{8}{subsection.7.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2}Models, APIs, and Data Sources}{8}{subsection.7.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {8}Individual Contributions}{9}{section.8}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Planned contribution summary for the final report}}{9}{table.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {9}GenAI / LLM Declaration}{9}{section.9}\protected@file@percent }
+\gdef \@abspage@last{11}
